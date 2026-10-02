@@ -1,0 +1,66 @@
+# Development stack: `docker compose up --build`
+# Flutter is NOT containerized; run it on your device/emulator against http://localhost:4000.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-elderly_care}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-elderly_care}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  agentic-ai:
+    build:
+      context: ./agentic-ai
+      dockerfile: ../docker/agentic-ai.Dockerfile
+    environment:
+      APP_ENV: development
+      INTERNAL_API_KEY: ${AI_SERVICE_API_KEY:-change_me_internal_key}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/backend.Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      LOG_LEVEL: info
+      DATABASE_URL: postgresql://${POSTGRES_USER:-elderly_care}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/${POSTGRES_DB:-elderly_care}?schema=public
+      # Same as DATABASE_URL here (no pooler in front of this dev Postgres container). Used
+      # only by `prisma migrate`/`validate`, never by the running app — see schema.prisma.
+      DIRECT_URL: postgresql://${POSTGRES_USER:-elderly_care}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/${POSTGRES_DB:-elderly_care}?schema=public
+      AI_SERVICE_URL: http://agentic-ai:8000
+      AI_SERVICE_API_KEY: ${AI_SERVICE_API_KEY:-change_me_internal_key}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      JWT_SECRET: ${JWT_SECRET:-change_me_to_a_long_random_string}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_me_to_a_different_long_random_string}
+      ACCESS_TOKEN_TTL_SECONDS: ${ACCESS_TOKEN_TTL_SECONDS:-900}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-30}
+      DOSE_GENERATION_DAYS_AHEAD: ${DOSE_GENERATION_DAYS_AHEAD:-2}
+      MISSED_DOSE_GRACE_MINUTES: ${MISSED_DOSE_GRACE_MINUTES:-60}
+      REMINDER_SWEEP_INTERVAL_MINUTES: ${REMINDER_SWEEP_INTERVAL_MINUTES:-15}
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      agentic-ai:
+        condition: service_started
+
+volumes:
+  pgdata:

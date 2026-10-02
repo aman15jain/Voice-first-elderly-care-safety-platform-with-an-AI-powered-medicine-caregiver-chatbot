@@ -1,0 +1,410 @@
+// Phase 3 adds medicines, schedules, dose tracking, adherence and notifications.
+// Phase 5 adds cognitive games and activity tracking. Phase 6 adds emergency SOS.
+// Phase 7 adds the voice layer.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Only needed when DATABASE_URL points at a connection pooler (e.g. Supabase's pgbouncer
+  // transaction-mode pooler, which can't run migrations) — Prisma uses this unpooled URL
+  // specifically for `migrate`/`db push`. Safe to leave DIRECT_URL unset against a plain
+  // Postgres instance; Prisma falls back to `url` in that case.
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ELDER
+  CAREGIVER
+  ADMIN
+}
+
+enum FamilyLinkStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  REVOKED
+}
+
+enum AuditAction {
+  USER_REGISTERED
+  USER_LOGGED_IN
+  USER_LOGIN_FAILED
+  USER_LOGGED_OUT
+  TOKEN_REFRESHED
+  FAMILY_LINK_INVITED
+  FAMILY_LINK_ACCEPTED
+  FAMILY_LINK_DECLINED
+  FAMILY_LINK_REVOKED
+  MEDICINE_CREATED
+  MEDICINE_UPDATED
+  MEDICINE_DELETED
+  DOSE_TAKEN
+  DOSE_SKIPPED
+  DOSE_MISSED
+  EMERGENCY_SOS_TRIGGERED
+  EMERGENCY_EVENT_ACKNOWLEDGED
+  EMERGENCY_EVENT_RESOLVED
+}
+
+/// The lifecycle of one scheduled dose. Every transition is deterministic backend
+/// logic (see modules/adherence and modules/reminders) — never an LLM decision.
+enum DoseStatus {
+  SCHEDULED
+  REMINDED
+  TAKEN
+  SKIPPED
+  MISSED
+}
+
+enum NotificationType {
+  MISSED_DOSE
+  EMERGENCY_SOS
+}
+
+/// Each SOS press is a new event; presses while one is already ACTIVE/ACKNOWLEDGED are
+/// idempotent (see EmergencyService.triggerSOS) rather than piling up duplicates.
+enum EmergencyEventStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+/// The four built-in games (spec section 17). Fixed and code-referenced, not user-created —
+/// the catalog rows are seeded once by migration, see 20260923000000_games_activity.
+enum GameType {
+  MEMORY_MATCH
+  PATTERN_RECOGNITION
+  ATTENTION_EXERCISE
+  SEQUENCE_RECALL
+}
+
+/// Deliberately minimal — see docs/architecture.md on why this isn't a full event log.
+enum ActivityEventType {
+  APP_OPENED
+}
+
+/// What POST /api/voice/process matched the transcript to. Phase 7's matching is
+/// deterministic keyword/pattern rules, not an LLM — see docs/architecture.md and
+/// modules/voice/voiceLanguagePacks.ts. Phase 8's agent can replace the matcher without
+/// changing this contract.
+enum VoiceIntentType {
+  MEDICINE_STATUS
+  MEDICINE_INFO
+  ACTIVITY_STATUS
+  CALL_CONTACT
+  EMERGENCY_SOS
+  UNKNOWN
+}
+
+/// Every account: elder, caregiver or admin. Role is set at registration and
+/// never trusted from the client afterwards — only read from the access token.
+model User {
+  id                String   @id @default(uuid()) @db.Uuid
+  email             String   @unique
+  passwordHash      String   @map("password_hash")
+  role              Role
+  preferredLanguage String   @default("en") @map("preferred_language")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  elderProfile     ElderProfile?
+  caregiverProfile CaregiverProfile?
+  refreshTokens    RefreshToken[]
+  auditLogs        AuditLog[]        @relation("AuditActor")
+
+  elderLinks     FamilyLink[] @relation("ElderLinks")
+  caregiverLinks FamilyLink[] @relation("CaregiverLinks")
+
+  medicines         Medicine[]
+  medicineSchedules MedicineSchedule[]
+  medicineDoses     MedicineDose[]
+  notifications     Notification[]
+  gameSessions      GameSession[]
+  activityEvents    ActivityEvent[]
+
+  emergencyContacts           EmergencyContact[]
+  elderEmergencyEvents        EmergencyEvent[]   @relation("ElderEmergencyEvents")
+  acknowledgedEmergencyEvents EmergencyEvent[]   @relation("EmergencyAcknowledgedBy")
+  resolvedEmergencyEvents     EmergencyEvent[]   @relation("EmergencyResolvedBy")
+  voiceInteractions           VoiceInteraction[]
+
+  @@map("users")
+}
+
+model ElderProfile {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName  String   @map("full_name")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("elder_profiles")
+}
+
+model CaregiverProfile {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName  String   @map("full_name")
+  /// Phase 10: lets a caregiver mute missed-dose alerts without touching the FamilyLink that
+  /// grants access. Defaults on, so an existing caregiver's behavior doesn't silently change.
+  notifyOnMissedDose Boolean  @default(true) @map("notify_on_missed_dose")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("caregiver_profiles")
+}
+
+/// The explicit permission grant between one elder and one caregiver. Nothing about the
+/// elder is visible to the caregiver anywhere in the system unless status is ACCEPTED.
+model FamilyLink {
+  id          String           @id @default(uuid()) @db.Uuid
+  elderId     String           @map("elder_id") @db.Uuid
+  caregiverId String           @map("caregiver_id") @db.Uuid
+  elder       User             @relation("ElderLinks", fields: [elderId], references: [id], onDelete: Cascade)
+  caregiver   User             @relation("CaregiverLinks", fields: [caregiverId], references: [id], onDelete: Cascade)
+  status      FamilyLinkStatus @default(PENDING)
+  invitedBy   String           @map("invited_by") @db.Uuid
+  respondedAt DateTime?        @map("responded_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  @@unique([elderId, caregiverId])
+  @@index([caregiverId])
+  @@map("family_links")
+}
+
+/// Opaque refresh tokens are stored hashed (see common/utils/tokens.ts) so a DB leak
+/// does not hand out usable sessions. Rotated on every use; reused tokens are rejected.
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+/// Append-only record of sensitive actions. actorId is nullable so a deleted user
+/// doesn't force deleting their history.
+model AuditLog {
+  id         String      @id @default(uuid()) @db.Uuid
+  actorId    String?     @map("actor_id") @db.Uuid
+  actor      User?       @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  action     AuditAction
+  targetType String?     @map("target_type")
+  targetId   String?     @map("target_id")
+  metadata   Json?
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  @@index([actorId])
+  @@map("audit_logs")
+}
+
+/// One medicine an elder takes. Deleting is a soft delete (isActive=false) so
+/// historical doses and adherence history are never destroyed.
+model Medicine {
+  id           String   @id @default(uuid()) @db.Uuid
+  elderId      String   @map("elder_id") @db.Uuid
+  elder        User     @relation(fields: [elderId], references: [id], onDelete: Cascade)
+  name         String
+  dosage       String
+  instructions String?
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  schedules MedicineSchedule[]
+
+  @@index([elderId])
+  @@map("medicines")
+}
+
+/// When a medicine is due. `timesOfDay` are "HH:mm" in UTC (see docs/architecture.md —
+/// per-elder timezones are a documented Phase 3 simplification, not yet supported).
+/// `elderId` is denormalized from `medicine.elderId` so authorization checks and dose
+/// queries never need to join through Medicine.
+model MedicineSchedule {
+  id         String    @id @default(uuid()) @db.Uuid
+  medicineId String    @map("medicine_id") @db.Uuid
+  medicine   Medicine  @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  elderId    String    @map("elder_id") @db.Uuid
+  elder      User      @relation(fields: [elderId], references: [id], onDelete: Cascade)
+  timesOfDay String[]  @map("times_of_day")
+  /// 0 (Sunday) - 6 (Saturday). Empty means every day.
+  daysOfWeek Int[]     @map("days_of_week")
+  startDate  DateTime  @map("start_date") @db.Date
+  endDate    DateTime? @map("end_date") @db.Date
+  isActive   Boolean   @default(true) @map("is_active")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  doses MedicineDose[]
+
+  @@index([elderId])
+  @@map("medicine_schedules")
+}
+
+/// One concrete occurrence generated from a schedule. This row *is* the adherence
+/// record for that occurrence: status plus every transition timestamp.
+model MedicineDose {
+  id           String           @id @default(uuid()) @db.Uuid
+  scheduleId   String           @map("schedule_id") @db.Uuid
+  schedule     MedicineSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  medicineId   String           @map("medicine_id") @db.Uuid
+  elderId      String           @map("elder_id") @db.Uuid
+  elder        User             @relation(fields: [elderId], references: [id], onDelete: Cascade)
+  scheduledFor DateTime         @map("scheduled_for")
+  status       DoseStatus       @default(SCHEDULED)
+  remindedAt   DateTime?        @map("reminded_at")
+  /// When the elder marked it taken or skipped.
+  respondedAt  DateTime?        @map("responded_at")
+  missedAt     DateTime?        @map("missed_at")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  // One dose per schedule per due time: generation is safe to re-run.
+  @@unique([scheduleId, scheduledFor])
+  @@index([elderId, scheduledFor])
+  @@map("medicine_doses")
+}
+
+/// In-app notifications (polled via GET /api/notifications). Push/SMS delivery is not
+/// implemented — this is the real, working default, not a stand-in for one.
+model Notification {
+  id          String           @id @default(uuid()) @db.Uuid
+  recipientId String           @map("recipient_id") @db.Uuid
+  recipient   User             @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  title       String
+  body        String
+  data        Json?
+  readAt      DateTime?        @map("read_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  @@index([recipientId, createdAt])
+  @@map("notifications")
+}
+
+/// The fixed catalog of built-in games. Seeded once by migration with stable ids — not
+/// created through the API. `type` is what code and the client key off; `id` is only
+/// the FK target for GameSession.
+model CognitiveGame {
+  id          String   @id @db.Uuid
+  type        GameType @unique
+  name        String
+  description String
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  sessions GameSession[]
+
+  @@map("cognitive_games")
+}
+
+/// One played round, recorded after the fact. The game itself (matching cards, recalling
+/// a sequence, ...) runs entirely on-device; the backend never decides gameplay outcomes,
+/// only records and summarizes them deterministically.
+model GameSession {
+  id              String        @id @default(uuid()) @db.Uuid
+  elderId         String        @map("elder_id") @db.Uuid
+  elder           User          @relation(fields: [elderId], references: [id], onDelete: Cascade)
+  gameId          String        @map("game_id") @db.Uuid
+  game            CognitiveGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  /// 1 (easiest) - 3 (hardest).
+  difficulty      Int
+  score           Int
+  mistakes        Int
+  durationSeconds Int           @map("duration_seconds")
+  completed       Boolean
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  @@index([elderId, createdAt])
+  @@index([elderId, gameId, createdAt])
+  @@map("game_sessions")
+}
+
+/// A minimal, non-invasive engagement ping (see docs/architecture.md). Most of what
+/// GET /api/activity/summary reports is derived from MedicineDose and GameSession, which
+/// are already recorded for their own purposes — this table only fills the "did they open
+/// the app at all today" gap without logging every screen visit.
+model ActivityEvent {
+  id         String            @id @default(uuid()) @db.Uuid
+  elderId    String            @map("elder_id") @db.Uuid
+  elder      User              @relation(fields: [elderId], references: [id], onDelete: Cascade)
+  type       ActivityEventType
+  occurredAt DateTime          @default(now()) @map("occurred_at")
+
+  @@index([elderId, occurredAt])
+  @@map("activity_events")
+}
+
+/// An external phone number, not necessarily an app user — this is deliberately separate
+/// from FamilyLink (which only connects registered accounts). Calling one is a real,
+/// on-device action (Flutter opens the phone dialer); the backend cannot call a number
+/// that isn't in our system, only registered caregivers get an in-app notification.
+model EmergencyContact {
+  id           String   @id @default(uuid()) @db.Uuid
+  elderId      String   @map("elder_id") @db.Uuid
+  elder        User     @relation(fields: [elderId], references: [id], onDelete: Cascade)
+  name         String
+  phone        String
+  relationship String?
+  /// Lower calls first. Defaults to "added last" order; the elder can reorder later.
+  priority     Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([elderId, priority])
+  @@map("emergency_contacts")
+}
+
+/// One SOS press. Location is optional and captured once, at trigger time — there is no
+/// continuous location tracking (spec section 18 warns against invasive tracking).
+model EmergencyEvent {
+  id                 String               @id @default(uuid()) @db.Uuid
+  elderId            String               @map("elder_id") @db.Uuid
+  elder              User                 @relation("ElderEmergencyEvents", fields: [elderId], references: [id], onDelete: Cascade)
+  status             EmergencyEventStatus @default(ACTIVE)
+  latitude           Float?
+  longitude          Float?
+  locationCapturedAt DateTime?            @map("location_captured_at")
+  triggeredAt        DateTime             @default(now()) @map("triggered_at")
+  acknowledgedAt     DateTime?            @map("acknowledged_at")
+  acknowledgedBy     String?              @map("acknowledged_by") @db.Uuid
+  acknowledgedByUser User?                @relation("EmergencyAcknowledgedBy", fields: [acknowledgedBy], references: [id], onDelete: SetNull)
+  resolvedAt         DateTime?            @map("resolved_at")
+  resolvedBy         String?              @map("resolved_by") @db.Uuid
+  resolvedByUser     User?                @relation("EmergencyResolvedBy", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  createdAt          DateTime             @default(now()) @map("created_at")
+
+  @@index([elderId, status])
+  @@index([elderId, triggeredAt])
+  @@map("emergency_events")
+}
+
+/// One voice command, after on-device STT turns it into text. Only the transcript and
+/// the matched intent are stored — never audio (see docs/architecture.md). Doubles as
+/// the "voice interactions" signal for later caregiver-insight phases (spec section 18).
+model VoiceInteraction {
+  id         String           @id @default(uuid()) @db.Uuid
+  elderId    String           @map("elder_id") @db.Uuid
+  elder      User             @relation(fields: [elderId], references: [id], onDelete: Cascade)
+  transcript String
+  language   String           @default("en")
+  intentType VoiceIntentType  @map("intent_type")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  @@index([elderId, createdAt])
+  @@map("voice_interactions")
+}
