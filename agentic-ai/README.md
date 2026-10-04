@@ -14,10 +14,46 @@ uvicorn app.main:app --reload --port 8000
 
 Check: `GET http://localhost:8000/health` and `http://localhost:8000/docs`.
 
+## RAG setup (LangChain + Gemini + Supabase pgvector)
+
+General medicine questions use RAG over `data/medicines/knowledge_base.json`:
+
+```
+knowledge_base.json -> LangChain Documents -> text splitter -> Gemini embeddings -> Supabase pgvector
+question -> Gemini query embedding -> pgvector cosine search -> top-K Documents -> Gemini chat model -> answer
+```
+
+- LangChain orchestrates; Gemini makes the vectors and the final answer; Supabase PostgreSQL +
+  pgvector stores and searches them. One Gemini key can serve both embeddings and the LLM.
+- The vectors live in the **same Supabase project** as the Node/Prisma application data, but in
+  separate tables (`langchain_pg_collection`, `langchain_pg_embedding`). Python never reads
+  application tables.
+
+Environment (`.env`, never committed):
+
+```
+LLM_PROVIDER=gemini
+LLM_API_KEY=<gemini key>
+LLM_MODEL=gemini-flash-lite-latest
+EMBEDDING_PROVIDER=gemini
+EMBEDDING_API_KEY=<gemini key>
+EMBEDDING_MODEL=gemini-embedding-001
+VECTOR_DB_URL=postgresql+psycopg://<user>:<password>@<host>:5432/postgres   # same as backend DIRECT_URL
+```
+
+`VECTOR_DB_URL` must be the unpooled / session-mode Supabase connection (the backend's
+`DIRECT_URL`), not the pgbouncer transaction pooler.
+
+Ingest (idempotent; also happens automatically on the first general-medicine question):
+
+```bash
+python -m app.rag      # unchanged chunks are not re-embedded
+```
+
 ## Test
 
 ```bash
-pytest
+pytest        # hermetic: fake embeddings + in-memory store, no Gemini/Supabase needed
 ```
 
 ## Layout

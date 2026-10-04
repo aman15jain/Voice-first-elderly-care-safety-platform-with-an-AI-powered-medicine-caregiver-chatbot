@@ -57,3 +57,21 @@ export function matchIntent(transcript: string, language: string): IntentMatch {
   }
   return { intent: 'UNKNOWN' };
 }
+
+/**
+ * Phrases that mark an utterance as a general medicine-information question ("what is metformin
+ * used for", "side effects of ...", "tell me about ..."). Deliberately a subset of the keywords the
+ * Python medicine agent itself requires (agentic-ai `_GENERAL_INFO_KEYWORDS`), so anything routed
+ * there is recognized as a general question again on the other side.
+ *
+ * This is only ever consulted AFTER `matchIntent` returned UNKNOWN: emergency, medicine-status,
+ * call and every other deterministic command have already been handled, so a phrase here can never
+ * pull an action command away from the rules. Medicine names are not matched in Node — the
+ * knowledge base (incl. aliases like Glucophage) is Python's job.
+ */
+const MEDICINE_QUESTION_PATTERN =
+  /\b(what is|what's|what does|side effects?|used for|purpose of|why do i take|tell me about|cause)\b/i;
+
+export function isMedicineKnowledgeQuestion(transcript: string): boolean {
+  return MEDICINE_QUESTION_PATTERN.test(transcript);
+}

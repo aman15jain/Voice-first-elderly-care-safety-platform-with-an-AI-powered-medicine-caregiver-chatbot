@@ -24,6 +24,17 @@ services:
     environment:
       APP_ENV: development
       INTERNAL_API_KEY: ${AI_SERVICE_API_KEY:-change_me_internal_key}
+      # Values come from the root .env (see .env.example); nothing secret is written here.
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gemini-flash-lite-latest}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-gemini}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-gemini-embedding-001}
+      VECTOR_DB_URL: ${VECTOR_DB_URL:-}
+      # Inside the compose network Node is reachable as `backend`, not localhost.
+      NODE_API_BASE_URL: ${NODE_API_BASE_URL:-http://backend:4000}
+      NODE_API_TIMEOUT_SECONDS: ${NODE_API_TIMEOUT_SECONDS:-5}
     ports:
       - "8000:8000"
     healthcheck:
@@ -45,6 +56,7 @@ services:
       # only by `prisma migrate`/`validate`, never by the running app — see schema.prisma.
       DIRECT_URL: postgresql://${POSTGRES_USER:-elderly_care}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/${POSTGRES_DB:-elderly_care}?schema=public
       AI_SERVICE_URL: http://agentic-ai:8000
+      AI_SERVICE_TIMEOUT_MS: ${AI_SERVICE_TIMEOUT_MS:-20000}
       AI_SERVICE_API_KEY: ${AI_SERVICE_API_KEY:-change_me_internal_key}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       JWT_SECRET: ${JWT_SECRET:-change_me_to_a_long_random_string}

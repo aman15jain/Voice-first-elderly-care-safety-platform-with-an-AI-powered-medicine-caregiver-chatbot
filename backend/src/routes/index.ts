@@ -123,6 +123,7 @@ export function buildRoutes(deps: AppDeps): Router {
     deps.medicinesRepository,
     activityService,
     deps.emergencyRepository,
+    deps.aiOrchestratorClient,
   );
   const aiService = new AiService(deps.aiOrchestratorClient);
   const internalContextService = new InternalContextService(

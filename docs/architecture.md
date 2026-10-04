@@ -245,19 +245,16 @@ frontend/elderly_care_app/lib/{core,shared,features/{auth,home,medicines,family,
   "what are the side effects" instead of always dumping the whole entry back. Retrieval is also
   *scoped* to the one medicine named in the question — a question about aspirin's side effects
   can't accidentally surface lisinopril's warnings.
-- **The embedding provider is honestly lexical, not dressed up as semantic.** `TfEmbeddingProvider`
-  (the real default) is deterministic, stopword-filtered term-frequency vectors over the corpus
-  vocabulary — the same pattern `MockLlmProvider` already follows: a clearly-labelled stand-in,
-  not a claim of trained-model understanding it doesn't have. For a handful of short, structured
-  entries, picking the best-matching section by keyword overlap is the right tool, not a
-  shortcut hiding a gap.
+- **Embeddings are always Gemini** (`gemini-embedding-001`, via LangChain), for documents and
+  queries alike, with no local fallback: a misconfiguration fails loudly instead of mixing
+  incompatible vector spaces. Similarity search runs inside Postgres (pgvector, cosine).
 - **A medicine not in the knowledge base gets an honest "I don't have that" answer**, never a
   guess — the same rule (spec/docs rule 1: grounded in retrieved sources, say so when nothing is
   found) Phase 8 already applied to personal medicine data.
-- **The vector store is swappable by design**, even though the current `InMemoryVectorStore` is
-  the right choice for a handful of entries: a production-scale knowledge base could implement the
-  same `VectorStore` interface against a real vector database (`settings.vector_db_url`, still
-  unused) without any change to `rag/retriever.py` or the agents above it.
+- **RAG vectors live in the same Supabase project as the application data, but in separate
+  tables.** Node + Prisma own the application tables; the Python service owns only LangChain's
+  `langchain_pg_*` vector tables and never queries the application tables. See
+  `docs/ai-architecture.md` for the pipeline.
 
 ## Caregiver dashboard & notifications (Phase 10)
 

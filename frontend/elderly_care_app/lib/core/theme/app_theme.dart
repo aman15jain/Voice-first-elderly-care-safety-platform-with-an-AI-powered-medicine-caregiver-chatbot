@@ -13,7 +13,10 @@ class AppTheme {
     return base.copyWith(
       scaffoldBackgroundColor: Colors.white,
       textTheme: base.textTheme.copyWith(
-        bodyLarge: const TextStyle(fontSize: 22),
+        // Material 3 text fields draw typed text with `bodyLarge`. Replacing it with a style that has
+        // no color left every TextField/TextFormField's entered text with a null (invisible) color,
+        // so the color is set explicitly here — one global place, inherited by every input.
+        bodyLarge: const TextStyle(fontSize: 22, color: Colors.black),
         bodyMedium: const TextStyle(fontSize: 20),
         titleMedium: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
         titleLarge: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700),

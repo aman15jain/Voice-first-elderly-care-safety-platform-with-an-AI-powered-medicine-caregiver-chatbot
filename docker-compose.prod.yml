@@ -33,11 +33,16 @@ services:
       APP_ENV: production
       LOG_LEVEL: ${AI_LOG_LEVEL:-INFO}
       INTERNAL_API_KEY: ${AI_SERVICE_API_KEY:?AI_SERVICE_API_KEY must be set in production}
-      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
       LLM_API_KEY: ${LLM_API_KEY:-}
-      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-mock}
+      LLM_MODEL: ${LLM_MODEL:-gemini-flash-lite-latest}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-gemini}
       EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-gemini-embedding-001}
       VECTOR_DB_URL: ${VECTOR_DB_URL:-}
+      # Inside the compose network Node is reachable as `backend`, not localhost.
+      NODE_API_BASE_URL: ${NODE_API_BASE_URL:-http://backend:4000}
+      NODE_API_TIMEOUT_SECONDS: ${NODE_API_TIMEOUT_SECONDS:-5}
     # No host port published: Node reaches it as http://agentic-ai:8000 on the internal
     # network only. Flutter never talks to this service directly — see docs/architecture.md.
     depends_on:
@@ -64,6 +69,7 @@ services:
       # DIRECT_URL is used only by `prisma migrate`/`validate`, never by the running app.
       DIRECT_URL: postgresql://${POSTGRES_USER:-elderly_care}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-elderly_care}?schema=public
       AI_SERVICE_URL: http://agentic-ai:8000
+      AI_SERVICE_TIMEOUT_MS: ${AI_SERVICE_TIMEOUT_MS:-20000}
       AI_SERVICE_API_KEY: ${AI_SERVICE_API_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS must list your real frontend origin(s) in production}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in production}

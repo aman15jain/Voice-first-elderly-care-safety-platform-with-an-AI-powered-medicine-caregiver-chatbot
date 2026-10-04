@@ -3,17 +3,22 @@ import type { ActivityService } from '../activity/activity.service';
 import type { EmergencyContactRecord, EmergencyRepository } from '../emergency/emergency.types';
 import type { MedicinesRepository } from '../medicines/medicines.types';
 import type { DoseRepository } from '../reminders/reminders.types';
-import { matchIntent } from './voiceLanguagePacks';
+import type { AiOrchestratorClient } from '../ai/ai.types';
+import { isMedicineKnowledgeQuestion, matchIntent } from './voiceLanguagePacks';
 import { getResponses } from './voiceResponses';
 import type { VoiceProcessResult, VoiceRepository } from './voice.types';
 
 const ACTIVITY_WINDOW_DAYS = 7;
 
 /**
- * Deterministic voice command processing — intent matching and every response below is
- * keyword/rule-based, never an LLM (spec sections 13/15/26). This keeps emergency and
- * medicine-status handling reliable and lets Phase 8's real agent later sit behind the
- * exact same `process()` contract without any Flutter-side change.
+ * Voice command processing. Intent matching and every command response is keyword/rule-based,
+ * never an LLM (spec sections 13/15/26), so emergency and medicine-status handling stay reliable.
+ *
+ * The one exception is a general medicine-information question ("what is metformin used for"):
+ * only when NO deterministic intent matched (UNKNOWN) and the utterance looks like such a
+ * question is it forwarded to the Agentic AI. The AI is informational only — whatever it returns
+ * is forced to a plain `information` response with no action, so it can never trigger an SOS,
+ * call or any other action.
  */
 export class VoiceService {
   constructor(
@@ -22,16 +27,42 @@ export class VoiceService {
     private readonly medicines: Pick<MedicinesRepository, 'listMedicinesForElder'>,
     private readonly activity: ActivityService,
     private readonly emergency: Pick<EmergencyRepository, 'listContactsForElder'>,
+    private readonly ai?: Pick<AiOrchestratorClient, 'askMedicineQuestion'>,
   ) {}
 
   async process(elderId: string, transcript: string, language = 'en'): Promise<VoiceProcessResult> {
     const { intent, target } = matchIntent(transcript, language);
     const responses = getResponses(language);
+
+    if (intent === 'UNKNOWN' && this.ai && isMedicineKnowledgeQuestion(transcript)) {
+      const aiResult = await this.askAgenticAi(this.ai, elderId, transcript, language, responses);
+      // Logged as MEDICINE_INFO (closest existing intent) — no schema change for AI-answered questions.
+      await this.repo.createInteraction({ elderId, transcript, language, intentType: 'MEDICINE_INFO' });
+      return { ...aiResult, language };
+    }
+
     const result = await this.resolveIntent(elderId, intent, target, responses);
 
     await this.repo.createInteraction({ elderId, transcript, language, intentType: intent });
 
     return { ...result, language };
+  }
+
+  /** Never throws: an unavailable AI becomes a friendly message, never an internal error. */
+  private async askAgenticAi(
+    ai: Pick<AiOrchestratorClient, 'askMedicineQuestion'>,
+    elderId: string,
+    transcript: string,
+    language: string,
+    responses: ReturnType<typeof getResponses>,
+  ): Promise<Omit<VoiceProcessResult, 'language'>> {
+    try {
+      const answer = await ai.askMedicineQuestion(elderId, transcript, language);
+      if (!answer.response) return { type: 'information', response: responses.medicineLookupUnavailable(), action: null };
+      return { type: 'information', response: answer.response, action: null };
+    } catch {
+      return { type: 'information', response: responses.medicineLookupUnavailable(), action: null };
+    }
   }
 
   listInteractions(elderId: string, from: Date, to: Date) {

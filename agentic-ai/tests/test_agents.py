@@ -78,12 +78,13 @@ def test_general_medicine_question_is_grounded_in_the_knowledge_base_not_persona
     fake.medicine_context = {"medicines": [{"name": "Metformin", "dosage": "500mg", "instructions": None}], "adherence": {}}
     _override_node_client(fake)
 
-    res = client.post("/agents/respond", json={"elder_id": "e1", "mode": "medicine_query", "query": "what are the side effects of aspirin"})
+    res = client.post("/agents/respond", json={"elder_id": "e1", "mode": "medicine_query", "query": "what are the side effects of aspirin bruising stomach"})
     assert res.status_code == 200
     body = res.json()
     assert "stomach" in body["response"].lower() or "bruis" in body["response"].lower()
     assert "not medical advice" in body["response"]
-    assert body["sources"] == ["knowledge_base:aspirin:side_effects"]
+    assert body["sources"][0] == "knowledge_base:aspirin:side_effects:0"
+    assert all(s.startswith("knowledge_base:aspirin:") for s in body["sources"])
 
 
 def test_general_medicine_question_about_an_unknown_medicine_says_so() -> None:

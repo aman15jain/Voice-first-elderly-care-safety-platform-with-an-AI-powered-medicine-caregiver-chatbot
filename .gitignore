@@ -1,11 +1,58 @@
+# --- Secrets / local config (real values live only in these, never committed) ---
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+key.properties
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+
+# --- Dependencies / virtual environments ---
 node_modules/
-dist/
 .venv/
+venv/
+
+# --- Build output ---
+dist/
+build/
+coverage/
+*.apk
+*.aab
+*.ipa
+
+# --- Python ---
 __pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Flutter / Dart ---
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+local.properties
+
+# --- Logs / temp ---
 *.log
+*.tmp
+*.tmp.ts
+*.tmp.py
+
+# --- OS / editor ---
 .DS_Store
+Thumbs.db
+desktop.ini
 .idea/
 .vscode/
+*.iml
+
+# --- AI assistant local state ---
+.claude/

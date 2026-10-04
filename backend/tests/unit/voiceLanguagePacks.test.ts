@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchIntent } from '../../src/modules/voice/voiceLanguagePacks';
+import { isMedicineKnowledgeQuestion, matchIntent } from '../../src/modules/voice/voiceLanguagePacks';
 
 describe('matchIntent (English)', () => {
   it('matches emergency phrases before the generic call pattern', () => {
@@ -39,5 +39,19 @@ describe('matchIntent (Hindi, with English fallback)', () => {
 
   it('falls back to English patterns entirely for an unknown language code', () => {
     expect(matchIntent('help', 'fr').intent).toBe('EMERGENCY_SOS');
+  });
+});
+
+describe('isMedicineKnowledgeQuestion', () => {
+  it('recognizes general medicine-information phrasing', () => {
+    for (const q of ['What is metformin used for?', 'side effects of lisinopril', 'Tell me about Glucophage', 'Can metformin cause stomach problems?']) {
+      expect(isMedicineKnowledgeQuestion(q)).toBe(true);
+    }
+  });
+
+  it('does not match plain commands or chatter', () => {
+    for (const q of ['good morning', 'call my son', 'did I take my medicine', 'thank you']) {
+      expect(isMedicineKnowledgeQuestion(q)).toBe(false);
+    }
   });
 });

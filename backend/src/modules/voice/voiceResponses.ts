@@ -12,6 +12,7 @@ export interface ResponseBuilders {
   noContact(target: string): string;
   sosConfirm(): string;
   unknown(): string;
+  medicineLookupUnavailable(): string;
 }
 
 const EN: ResponseBuilders = {
@@ -32,6 +33,7 @@ const EN: ResponseBuilders = {
   noContact: (target) => `I couldn't find a contact matching "${target}". You can add one from the Family screen.`,
   sosConfirm: () => "I'm opening the emergency screen so you can confirm you need help.",
   unknown: () => "I'm sorry, I didn't understand that. You can try asking about your medicines, your activity, or say 'call' followed by a contact's name.",
+  medicineLookupUnavailable: () => "I'm unable to look up that medicine information right now. Please try again.",
 };
 
 const HI: Partial<ResponseBuilders> = {

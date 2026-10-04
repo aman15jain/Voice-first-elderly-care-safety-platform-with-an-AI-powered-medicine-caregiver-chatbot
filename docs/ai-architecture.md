@@ -44,22 +44,35 @@ for) every safety guarantee below rather than changing the architecture — see
 - `data/medicines/knowledge_base.json`: a small, curated starter set (8 common medicines) with
   `uses`/`side_effects`/`warnings` text per medicine. This is general public medicine information,
   not personal data — unlike the Phase 8 tools, it isn't scoped to one elder.
-- `rag/chunking.py`: one chunk per section (`uses`/`side_effects`/`warnings`) rather than per
-  medicine, so retrieval can tell "what is it for" apart from "what are the side effects" instead
-  of always returning the whole entry.
-- `embeddings/provider.py`: `EmbeddingProvider` abstraction; `TfEmbeddingProvider` (the real
-  default, `EMBEDDING_PROVIDER=mock`) is deterministic, stopword-filtered term-frequency vectors
-  over the corpus vocabulary — labelled as a lexical retriever, not dressed up as a trained
-  semantic model, the same honesty `MockLlmProvider` already follows. For disambiguating which
-  section of a short entry answers a question, keyword overlap is the right tool, not a limitation.
-- `rag/vector_store.py`: `VectorStore` abstraction; `InMemoryVectorStore` does cosine-similarity
-  search over the (small, static) chunk set. A production-scale deployment could swap in a real
-  vector database (`settings.vector_db_url`, still unused) behind the same interface.
-- `rag/ingest.py` / `rag/retriever.py`: ingestion (load -> chunk -> embed -> index) runs once per
-  process (`api/deps.py`), not per-request. `MedicineKnowledgeRetriever.find_mentioned_medicine`
-  matches a name or alias in the query; `.retrieve()` then searches only that medicine's chunks and
-  falls back to its `uses` chunk if nothing scores above zero (e.g. "tell me about metformin" with
-  no section-specific words).
+- **LangChain** orchestrates the RAG pipeline; **Gemini** provides both the embeddings
+  (`gemini-embedding-001`, 3072 dimensions) and the answer model (`LLM_MODEL`); **Supabase
+  PostgreSQL + pgvector** stores the vectors and performs the similarity search.
+- `rag/chunking.py`: knowledge entries -> LangChain `Document`s, one per section
+  (`uses`/`side_effects`/`warnings`) so retrieval can tell "what is it for" apart from "what are the
+  side effects", then `RecursiveCharacterTextSplitter`. Every chunk carries `medicine_id`,
+  `medicine_name`, `section`, `source`, `chunk_index`, a stable id (`medicine:section:index`) and a
+  content hash (text + embedding model).
+- `embeddings/provider.py`: `get_embeddings()` returns LangChain's `GoogleGenerativeAIEmbeddings`.
+  The same object embeds documents at ingestion and queries at retrieval. There is **no local or
+  lexical fallback** — a missing key or non-Gemini provider raises, because two embedding spaces
+  must never share an index.
+- `rag/vector_store.py`: `PGVector` (`langchain-postgres`) over the **same Supabase database the Node
+  backend uses** (`VECTOR_DB_URL`, the unpooled/session-mode connection string). Vectors live in
+  LangChain's own `langchain_pg_collection` / `langchain_pg_embedding` tables; Prisma-owned
+  application tables are never read or written. `KnowledgeVectorStore` is the narrow wrapper the
+  rest of the code uses.
+- `rag/ingest.py` (`python -m app.rag`): idempotent sync. New chunk -> embed + insert; changed text
+  or changed embedding model -> re-embed + update; unchanged -> skipped (zero Gemini calls); removed
+  from the JSON -> deleted. So a restart re-embeds nothing.
+- `rag/retriever.py` / `rag/chain.py`: the LangChain retriever (`as_retriever`, cosine similarity,
+  filtered to the one medicine named in the question) feeds an LCEL chain
+  `retriever -> prompt -> ChatGoogleGenerativeAI -> answer`. The model only words an answer from
+  the retrieved chunks. If the chat model fails, the retrieved text itself is returned; if
+  embedding/vector search fails, `RagUnavailableError` is raised and the agent says it can't look
+  that up right now — it never answers from a different retrieval method. The "not medical advice"
+  disclaimer is appended deterministically, not by the model.
+- The store connects and syncs lazily on the first general-medicine question, so personal-data
+  questions never depend on Gemini or the vector database.
 - **The medicine agent only answers from the knowledge base when it both recognizes a general-info
   question (`what is`/`side effect`/`used for`/...) and a medicine name the knowledge base covers.**
   An unrecognized medicine gets an honest "I don't have general information about that medicine

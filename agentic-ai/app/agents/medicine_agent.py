@@ -1,5 +1,5 @@
-from app.llm.provider import LlmProvider
-from app.rag.retriever import MedicineKnowledgeRetriever
+from app.llm.provider import LlmProvider, with_general_info_disclaimer
+from app.rag.retriever import MedicineKnowledgeRetriever, RagUnavailableError
 from app.schemas.agents import AgentResponse
 from app.tools.medicine_tool import MedicineContextTool
 from app.tools.node_client import ToolError
@@ -7,6 +7,7 @@ from app.tools.node_client import ToolError
 _ADHERENCE_KEYWORDS = ("taken", "took", "adherence", "missed", "skip")
 _GENERAL_INFO_KEYWORDS = (
     "what is", "what's", "side effect", "used for", "purpose of", "why do i take", "what does", "tell me about",
+    "cause",
 )
 _ADHERENCE_WINDOW_DAYS = 30
 
@@ -74,14 +75,22 @@ class MedicineAgent:
             text = self._llm.compose("medicine_general_info_not_found")
             return AgentResponse(response=text, language=language, sources=[])
 
-        chunks = self._retriever.retrieve(query, medicine_name=medicine_name, top_k=1)
-        if not chunks:
+        try:
+            result = self._retriever.answer(query, medicine_name=medicine_name)
+        except RagUnavailableError:
+            return AgentResponse(
+                response="I couldn't look up medicine information right now. Please try again shortly.",
+                language=language,
+                sources=[],
+            )
+        if not result.chunks:
             text = self._llm.compose("medicine_general_info_unknown", medicine_name=medicine_name)
             return AgentResponse(response=text, language=language, sources=[])
 
-        body = " ".join(c.text for c in chunks)
-        text = self._llm.compose("medicine_general_info", body=body)
-        sources = [f"knowledge_base:{c.id}" for c in chunks]
+        # The RAG chain already worded the answer from the retrieved chunks only; the disclaimer is
+        # appended deterministically rather than left to a model.
+        text = with_general_info_disclaimer(result.text)
+        sources = [f"knowledge_base:{c.id}" for c in result.chunks]
         return AgentResponse(response=text, language=language, sources=sources)
 
 
