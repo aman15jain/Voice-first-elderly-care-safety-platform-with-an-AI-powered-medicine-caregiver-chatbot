@@ -8,7 +8,11 @@ import 'package:intl/intl.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/connectivity_service.dart';
 import '../../../core/services/sync_queue_service.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../shared/widgets/big_button.dart';
+import '../../../shared/widgets/care/care_connect_logo.dart';
+import '../../../shared/widgets/care/care_pill.dart';
+import '../../../shared/widgets/care/care_states.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../medicines/application/medicines_providers.dart';
 import '../../medicines/data/medicines_repository.dart';
@@ -51,8 +55,8 @@ class _ElderHomeScreenState extends ConsumerState<ElderHomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
-        actions: [IconButton(icon: const Icon(Icons.person), onPressed: () => context.push('/profile'))],
+        title: const CareConnectLogo(markSize: 40, wordmarkSize: 26, showTagline: false),
+        actions: [IconButton(icon: const Icon(Icons.person), tooltip: 'Profile', onPressed: () => context.push('/profile'))],
       ),
       body: SafeArea(
         child: RefreshIndicator(
@@ -61,57 +65,148 @@ class _ElderHomeScreenState extends ConsumerState<ElderHomeScreen> {
             ref.invalidate(todayScheduleProvider);
           },
           child: ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(CareSpacing.screenH - 4, CareSpacing.xs, CareSpacing.screenH - 4, CareSpacing.xl),
             children: [
-              Text('Good day, $name', style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 20),
-              BigButton(
-                label: 'Talk',
-                icon: Icons.mic,
-                onPressed: () => context.push('/voice'),
-              ),
-              const SizedBox(height: 24),
+              Text('Good day, $name', style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 2),
+              Text(DateFormat.MMMMEEEEd().format(DateTime.now()), style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: CareSpacing.lg),
+              _TalkCard(onTap: () => context.push('/voice')),
+              const SizedBox(height: CareSpacing.lg),
               nextDose.when(
                 loading: () => const SizedBox(height: 80, child: Center(child: CircularProgressIndicator())),
-                error: (e, _) => Text(AppFailure.fromError(e).message),
+                error: (e, _) => CareInlineError(message: AppFailure.fromError(e).message),
                 data: (view) => view == null ? const _AllCaughtUpCard() : _NextMedicineCard(view: view),
               ),
-              const SizedBox(height: 12),
               schedule.maybeWhen(
                 data: (views) {
                   if (views.isEmpty) return const SizedBox.shrink();
                   final taken = views.where((v) => v.dose.status == DoseStatus.taken).length;
-                  return Center(
-                    child: TextButton(
-                      onPressed: () => context.push('/medicines/today'),
-                      child: Text("See today's full schedule ($taken/${views.length} taken)", style: const TextStyle(fontSize: 16)),
+                  return Padding(
+                    padding: const EdgeInsets.only(top: CareSpacing.xs),
+                    child: Center(
+                      child: TextButton.icon(
+                        onPressed: () => context.push('/medicines/today'),
+                        icon: const Icon(Icons.event_note),
+                        label: Text("See today's full schedule ($taken/${views.length} taken)"),
+                      ),
                     ),
                   );
                 },
                 orElse: () => const SizedBox.shrink(),
               ),
-              const SizedBox(height: 20),
-              Center(
-                child: TextButton(
-                  onPressed: () => context.push('/activity'),
-                  child: const Text('See this week’s activity', style: TextStyle(fontSize: 16)),
+              // Emergency sits right after the medicine section so it is visible without scrolling.
+              const SizedBox(height: CareSpacing.sm),
+              BigButton(label: 'Emergency', icon: Icons.warning_amber, color: CareColors.danger, onPressed: () => context.push('/emergency')),
+              const SizedBox(height: CareSpacing.lg),
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _HomeTile(
+                        icon: Icons.extension,
+                        color: CareColors.accentViolet,
+                        background: CareColors.accentVioletSoft,
+                        label: 'Play Game',
+                        onTap: () => context.push('/games'),
+                      ),
+                    ),
+                    const SizedBox(width: CareSpacing.md),
+                    Expanded(
+                      child: _HomeTile(
+                        icon: Icons.insights,
+                        color: CareColors.accentBlue,
+                        background: CareColors.accentBlueSoft,
+                        label: 'See this week’s activity',
+                        onTap: () => context.push('/activity'),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Row(
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The voice assistant entry — the elder's primary action, so it is the hero of the page.
+class _TalkCard extends StatelessWidget {
+  const _TalkCard({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return Semantics(
+      button: true,
+      label: 'Talk. Ask about your medicines or call your family.',
+      excludeSemantics: true,
+      child: Material(
+        borderRadius: BorderRadius.circular(CareRadius.card),
+        clipBehavior: Clip.antiAlias,
+        child: Ink(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [CareColors.primary, CareColors.primaryDark]),
+          ),
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(CareSpacing.lg + 4),
+              child: Row(
                 children: [
-                  Expanded(
-                    child: BigButton(label: 'Play Game', icon: Icons.extension, onPressed: () => context.push('/games')),
+                  Container(
+                    width: 68,
+                    height: 68,
+                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                    child: const Icon(Icons.mic, size: 36, color: CareColors.primaryDark),
                   ),
+                  const SizedBox(width: CareSpacing.lg),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Talk', style: text.headlineSmall?.copyWith(color: Colors.white)),
+                        const SizedBox(height: 2),
+                        Text('Ask about medicines or call family', style: text.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.92))),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: Colors.white, size: 32),
                 ],
               ),
-              const SizedBox(height: 16),
-              BigButton(
-                label: 'Emergency',
-                icon: Icons.warning_amber,
-                color: Theme.of(context).colorScheme.error,
-                onPressed: () => context.push('/emergency'),
-              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeTile extends StatelessWidget {
+  const _HomeTile({required this.icon, required this.color, required this.background, required this.label, required this.onTap});
+  final IconData icon;
+  final Color color;
+  final Color background;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(CareSpacing.md),
+          child: Row(
+            children: [
+              CareIconTile(icon: icon, color: color, background: background, size: 44),
+              const SizedBox(width: CareSpacing.md),
+              Expanded(child: Text(label, style: Theme.of(context).textTheme.titleSmall)),
             ],
           ),
         ),
@@ -125,17 +220,15 @@ class _AllCaughtUpCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.green.shade50,
-      child: const Padding(
-        padding: EdgeInsets.all(24),
-        child: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 36),
-            SizedBox(width: 16),
-            Expanded(child: Text('All caught up! No medicines due right now.', style: TextStyle(fontSize: 20))),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.all(CareSpacing.lg + 4),
+      decoration: BoxDecoration(color: CareColors.successSoft, borderRadius: BorderRadius.circular(CareRadius.card)),
+      child: Row(
+        children: [
+          const CareIconTile(icon: Icons.check_circle, color: CareColors.success, background: Colors.white, circle: true),
+          const SizedBox(width: CareSpacing.lg),
+          Expanded(child: Text('All caught up! No medicines due right now.', style: Theme.of(context).textTheme.titleMedium)),
+        ],
       ),
     );
   }
@@ -170,17 +263,32 @@ class _NextMedicineCardState extends ConsumerState<_NextMedicineCard> {
   @override
   Widget build(BuildContext context) {
     final time = DateFormat.jm().format(widget.view.dose.scheduledFor);
+    final text = Theme.of(context).textTheme;
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(CareSpacing.lg + 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Next Medicine', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(widget.view.medicineName, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700)),
-            Text('${widget.view.dosage} • $time', style: const TextStyle(fontSize: 20)),
-            const SizedBox(height: 16),
+            Row(
+              children: [
+                const CareIconTile(icon: Icons.medication, color: CareColors.accentWarm, background: CareColors.accentWarmSoft),
+                const SizedBox(width: CareSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Next Medicine', style: text.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+                      Text(widget.view.medicineName, style: text.headlineSmall),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: CareSpacing.md),
+            CareStatusPill(label: '${widget.view.dosage} • $time', icon: Icons.schedule),
+            const SizedBox(height: CareSpacing.lg),
             BigButton(label: 'Take Medicine', icon: Icons.check, isLoading: _isSubmitting, onPressed: _markTaken),
           ],
         ),

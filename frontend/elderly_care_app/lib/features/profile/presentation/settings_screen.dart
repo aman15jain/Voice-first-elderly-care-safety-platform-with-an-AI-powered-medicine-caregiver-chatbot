@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../shared/widgets/big_button.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../auth/application/auth_controller.dart';
@@ -20,12 +21,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _isSavingPreference = false;
 
   Future<void> _logout() async {
-    final confirmed = await showConfirmDialog(
-      context,
-      title: 'Log Out?',
-      message: 'You will need to log in again to use the app.',
-      confirmLabel: 'Log Out',
-    );
+    final confirmed = await showConfirmDialog(context, title: 'Log Out?', message: 'You will need to log in again to use the app.', confirmLabel: 'Log Out');
     if (!confirmed) return;
     setState(() => _isLoggingOut = true);
     await ref.read(authControllerProvider.notifier).logout();
@@ -54,23 +50,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       appBar: AppBar(title: const Text('Settings')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(CareSpacing.screenH - 4, CareSpacing.sm, CareSpacing.screenH - 4, CareSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Card(
-                child: ListTile(
-                  leading: Icon(Icons.translate),
-                  title: Text('Language', style: TextStyle(fontSize: 20)),
-                  subtitle: Text('More languages are coming soon.'),
-                ),
+                child: ListTile(leading: Icon(Icons.translate), title: Text('Language'), subtitle: Text('More languages are coming soon.')),
               ),
               if (isCaregiver) ...[
                 const SizedBox(height: 12),
                 Card(
                   child: SwitchListTile(
                     secondary: const Icon(Icons.notifications_active),
-                    title: const Text('Missed dose alerts', style: TextStyle(fontSize: 20)),
+                    title: const Text('Missed dose alerts'),
                     subtitle: const Text('Get notified when a linked elder misses a scheduled dose.'),
                     value: user?.notifyOnMissedDose ?? true,
                     onChanged: _isSavingPreference ? null : _toggleNotifyOnMissedDose,
@@ -78,13 +70,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ],
               const Spacer(),
-              BigButton(
-                label: 'Log Out',
-                icon: Icons.logout,
-                isLoading: _isLoggingOut,
-                color: Theme.of(context).colorScheme.error,
-                onPressed: _logout,
-              ),
+              BigButton(label: 'Log Out', icon: Icons.logout, isLoading: _isLoggingOut, color: CareColors.danger, onPressed: _logout),
             ],
           ),
         ),

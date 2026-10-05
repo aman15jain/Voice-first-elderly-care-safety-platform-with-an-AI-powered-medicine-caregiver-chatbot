@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/care_tokens.dart';
 import '../../../../shared/widgets/big_button.dart';
 
 const _labels = {1: 'Easy', 2: 'Medium', 3: 'Hard'};
@@ -31,23 +32,23 @@ class _DifficultyPickerState extends State<DifficultyPicker> {
           children: [
             Text(widget.gameName, style: Theme.of(context).textTheme.headlineMedium, textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            Text(widget.description, style: const TextStyle(fontSize: 18), textAlign: TextAlign.center),
-            const SizedBox(height: 28),
-            const Text('Choose a difficulty', style: TextStyle(fontSize: 18)),
-            const SizedBox(height: 12),
+            Text(widget.description, style: Theme.of(context).textTheme.bodyMedium, textAlign: TextAlign.center),
+            const SizedBox(height: CareSpacing.xxl),
+            Text('Choose a difficulty', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: CareSpacing.md),
             Wrap(
-              spacing: 12,
+              spacing: CareSpacing.md,
+              runSpacing: CareSpacing.sm,
               children: [
                 for (final level in [1, 2, 3])
-                  ChoiceChip(
-                    label: Text(_labels[level]!, style: const TextStyle(fontSize: 18)),
-                    selected: _selected == level,
-                    onSelected: (_) => setState(() => _selected = level),
-                  ),
+                  ChoiceChip(label: Text(_labels[level]!), selected: _selected == level, onSelected: (_) => setState(() => _selected = level)),
               ],
             ),
             const SizedBox(height: 32),
-            SizedBox(width: 220, child: BigButton(label: 'Start', icon: Icons.play_arrow, onPressed: () => widget.onStart(_selected))),
+            SizedBox(
+              width: 220,
+              child: BigButton(label: 'Start', icon: Icons.play_arrow, onPressed: () => widget.onStart(_selected)),
+            ),
           ],
         ),
       ),

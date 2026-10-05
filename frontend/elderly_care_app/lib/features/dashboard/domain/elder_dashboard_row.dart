@@ -1,12 +1,7 @@
 import '../../medicines/domain/medicine_models.dart';
 
 class ElderActivitySummary {
-  const ElderActivitySummary({
-    required this.daysInRange,
-    required this.activeDays,
-    required this.medicineInteractionDays,
-    required this.gameSessionDays,
-  });
+  const ElderActivitySummary({required this.daysInRange, required this.activeDays, required this.medicineInteractionDays, required this.gameSessionDays});
 
   final int daysInRange;
   final int activeDays;
@@ -61,10 +56,6 @@ class DailyAdherencePoint {
   final int totalDue;
   final int? takenRate;
 
-  factory DailyAdherencePoint.fromJson(Map<String, dynamic> json) => DailyAdherencePoint(
-    date: json['date'] as String,
-    taken: json['taken'] as int,
-    totalDue: json['totalDue'] as int,
-    takenRate: json['takenRate'] as int?,
-  );
+  factory DailyAdherencePoint.fromJson(Map<String, dynamic> json) =>
+      DailyAdherencePoint(date: json['date'] as String, taken: json['taken'] as int, totalDue: json['totalDue'] as int, takenRate: json['takenRate'] as int?);
 }

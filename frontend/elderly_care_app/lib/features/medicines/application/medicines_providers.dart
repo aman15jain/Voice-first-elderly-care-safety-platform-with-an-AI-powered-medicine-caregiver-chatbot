@@ -62,7 +62,9 @@ DoseView _doseViewFromCacheJson(Map<String, dynamic> json) {
       scheduledFor: DateTime.parse(json['scheduledFor'] as String),
       status: _statusFromCacheName(json['status'] as String),
     ),
-    medicine: medicineName == null ? null : Medicine(id: json['medicineId'] as String, name: medicineName, dosage: json['dosage'] as String? ?? '', isActive: true),
+    medicine: medicineName == null
+        ? null
+        : Medicine(id: json['medicineId'] as String, name: medicineName, dosage: json['dosage'] as String? ?? '', isActive: true),
   );
 }
 

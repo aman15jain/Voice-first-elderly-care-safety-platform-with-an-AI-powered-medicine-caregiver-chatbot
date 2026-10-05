@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/care_tokens.dart';
+import '../../../shared/widgets/care/care_connect_logo.dart';
 import '../application/auth_controller.dart';
 import '../domain/app_user.dart';
 
@@ -21,8 +23,10 @@ class SplashScreen extends ConsumerWidget {
       switch (next) {
         case AuthAuthenticated(:final user):
           context.go(user.role == AppRole.caregiver ? '/caregiver' : '/home');
+        // Logged-out users start onboarding; its Skip / Sign In lead to /login. The role is
+        // unknown until sign-in, so this is the single entry point for everyone signed out.
         case AuthUnauthenticated():
-          context.go('/login');
+          context.go('/welcome');
         case AuthBootstrapping():
           break;
       }
@@ -33,11 +37,13 @@ class SplashScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.favorite, size: 64, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 24),
-            Text('Elderly Care', style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 32),
-            const CircularProgressIndicator(),
+            const CareConnectMark(size: 80),
+            const SizedBox(height: CareSpacing.lg),
+            Text(CareConnectLogo.brandName, style: CareText.brandName.copyWith(fontSize: 40, color: CareColors.primary)),
+            const SizedBox(height: CareSpacing.xs),
+            const Text('Care Today for a Brighter Tomorrow', style: CareText.tagline),
+            const SizedBox(height: CareSpacing.xxl),
+            const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 3)),
           ],
         ),
       ),

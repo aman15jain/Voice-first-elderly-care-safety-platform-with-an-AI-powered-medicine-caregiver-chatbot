@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/utils/validators.dart';
 import '../../../shared/widgets/big_button.dart';
+import '../../../shared/widgets/care/care_states.dart';
 import '../application/auth_controller.dart';
 import '../domain/app_user.dart';
 
@@ -59,7 +61,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: CareSpacing.screenH, vertical: CareSpacing.xl),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
               child: Form(
@@ -97,10 +99,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                       validator: Validators.password,
                     ),
-                    if (_error != null) ...[
-                      const SizedBox(height: 16),
-                      Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 18), textAlign: TextAlign.center),
-                    ],
+                    if (_error != null) ...[const SizedBox(height: 16), CareInlineError(message: _error!)],
                     const SizedBox(height: 28),
                     BigButton(label: 'Create Account', onPressed: _submit, isLoading: _isLoading),
                   ],

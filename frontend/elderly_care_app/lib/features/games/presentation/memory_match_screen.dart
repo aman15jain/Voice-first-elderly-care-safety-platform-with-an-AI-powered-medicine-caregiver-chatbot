@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/care/care_pill.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/errors/app_failure.dart';
 import '../domain/game_models.dart';
 import 'widgets/difficulty_picker.dart';
@@ -11,7 +13,11 @@ import 'widgets/game_session_recorder.dart';
 
 const _symbols = ['🍎', '🍌', '🍇', '🍊', '🍓', '🍒'];
 
-int _pairsForDifficulty(int difficulty) => switch (difficulty) { 1 => 3, 2 => 4, _ => 6 };
+int _pairsForDifficulty(int difficulty) => switch (difficulty) {
+  1 => 3,
+  2 => 4,
+  _ => 6,
+};
 
 class _Card {
   _Card(this.symbol);
@@ -41,7 +47,9 @@ class _MemoryMatchScreenState extends ConsumerState<MemoryMatchScreen> {
 
   void _start(int difficulty) {
     final pairs = _pairsForDifficulty(difficulty);
-    final deck = [for (final s in _symbols.take(pairs)) ...[_Card(s), _Card(s)]]..shuffle(Random());
+    final deck = [
+      for (final s in _symbols.take(pairs)) ...[_Card(s), _Card(s)],
+    ]..shuffle(Random());
     setState(() {
       _cards = deck;
       _mistakes = 0;
@@ -90,7 +98,9 @@ class _MemoryMatchScreenState extends ConsumerState<MemoryMatchScreen> {
       final duration = DateTime.now().difference(_startedAt!).inSeconds.clamp(1, 3600);
       final pairs = cards.length ~/ 2;
       final score = (pairs * 100 - _mistakes * 10).clamp(0, 10000);
-      setState(() => _result = GameSessionResult(difficulty: _pendingDifficulty, score: score, mistakes: _mistakes, durationSeconds: duration, completed: true));
+      setState(
+        () => _result = GameSessionResult(difficulty: _pendingDifficulty, score: score, mistakes: _mistakes, durationSeconds: duration, completed: true),
+      );
     }
   }
 
@@ -127,7 +137,7 @@ class _MemoryMatchScreenState extends ConsumerState<MemoryMatchScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          Text('Mistakes: $_mistakes', style: const TextStyle(fontSize: 18)),
+          CareStatusPill(label: 'Mistakes: $_mistakes', foreground: CareColors.warning, background: CareColors.warningSoft),
           const SizedBox(height: 12),
           Expanded(
             child: GridView.builder(
@@ -140,12 +150,16 @@ class _MemoryMatchScreenState extends ConsumerState<MemoryMatchScreen> {
                   onTap: () => _onTapCard(i),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: card.isMatched ? Colors.green.shade100 : (shown ? Colors.white : Theme.of(context).colorScheme.primaryContainer),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.black12),
+                      color: card.isMatched ? CareColors.primaryTint : (shown ? CareColors.surface : CareColors.primarySoft),
+                      borderRadius: BorderRadius.circular(CareRadius.tile),
+                      border: Border.all(color: card.isMatched ? CareColors.primary : CareColors.cardBorder),
+                      boxShadow: CareShadows.tile,
                     ),
                     alignment: Alignment.center,
-                    child: Text(shown ? card.symbol : '?', style: const TextStyle(fontSize: 32)),
+                    child: Text(
+                      shown ? card.symbol : '?',
+                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: CareColors.primaryDark),
+                    ),
                   ),
                 );
               },

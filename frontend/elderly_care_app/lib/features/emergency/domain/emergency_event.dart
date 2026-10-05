@@ -12,14 +12,7 @@ EmergencyEventStatus emergencyEventStatusFromString(String value) {
 }
 
 class EmergencyEvent {
-  const EmergencyEvent({
-    required this.id,
-    required this.elderId,
-    required this.status,
-    required this.triggeredAt,
-    this.latitude,
-    this.longitude,
-  });
+  const EmergencyEvent({required this.id, required this.elderId, required this.status, required this.triggeredAt, this.latitude, this.longitude});
 
   final String id;
   final String elderId;

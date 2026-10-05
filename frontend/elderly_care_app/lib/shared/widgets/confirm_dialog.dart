@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/care_tokens.dart';
+
 /// A clear, plain-language confirmation before any irreversible or hard-to-undo action
 /// (deleting a medicine, revoking a family link, ...). Returns true only on explicit confirm.
 Future<bool> showConfirmDialog(
@@ -14,12 +16,12 @@ Future<bool> showConfirmDialog(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(title),
-      content: Text(message, style: const TextStyle(fontSize: 20)),
+      content: Text(message),
       actions: [
         TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(cancelLabel)),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
-          style: isDestructive ? FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error) : null,
+          style: isDestructive ? FilledButton.styleFrom(backgroundColor: CareColors.danger) : null,
           child: Text(confirmLabel),
         ),
       ],

@@ -70,10 +70,7 @@ class AuthInterceptor extends Interceptor {
         await _tokenStorage.clear();
         return false;
       }
-      final res = await Dio(BaseOptions(baseUrl: _baseUrl)).post<Map<String, dynamic>>(
-        '/api/auth/refresh',
-        data: {'refreshToken': refreshToken},
-      );
+      final res = await Dio(BaseOptions(baseUrl: _baseUrl)).post<Map<String, dynamic>>('/api/auth/refresh', data: {'refreshToken': refreshToken});
       final body = res.data!;
       await _tokenStorage.save(accessToken: body['accessToken'] as String, refreshToken: body['refreshToken'] as String);
       return true;

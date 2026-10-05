@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../shared/widgets/care/care_pill.dart';
+import '../../../../core/theme/care_tokens.dart';
 import '../../../../shared/widgets/big_button.dart';
 import '../../domain/game_models.dart';
 
@@ -20,19 +22,33 @@ class GameResultView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              result.completed ? Icons.emoji_events : Icons.flag,
-              size: 64,
-              color: result.completed ? Colors.amber.shade700 : Theme.of(context).colorScheme.primary,
+            CareIconTile(
+              icon: result.completed ? Icons.emoji_events : Icons.flag,
+              color: result.completed ? CareColors.accentWarm : CareColors.primary,
+              background: result.completed ? CareColors.accentWarmSoft : CareColors.primarySoft,
+              size: 96,
+              circle: true,
             ),
             const SizedBox(height: 16),
             Text(result.completed ? 'Well done!' : 'Good try!', style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 24),
-            _StatRow(label: 'Score', value: '${result.score}'),
-            _StatRow(label: 'Mistakes', value: '${result.mistakes}'),
-            _StatRow(label: 'Time', value: '${result.durationSeconds}s'),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: CareSpacing.xl, vertical: CareSpacing.md),
+                child: Column(
+                  children: [
+                    _StatRow(label: 'Score', value: '${result.score}'),
+                    _StatRow(label: 'Mistakes', value: '${result.mistakes}'),
+                    _StatRow(label: 'Time', value: '${result.durationSeconds}s'),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 28),
-            SizedBox(width: 220, child: BigButton(label: 'Done', icon: Icons.check, isLoading: isSaving, onPressed: onDone)),
+            SizedBox(
+              width: 220,
+              child: BigButton(label: 'Done', icon: Icons.check, isLoading: isSaving, onPressed: onDone),
+            ),
           ],
         ),
       ),
@@ -52,8 +68,8 @@ class _StatRow extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(width: 120, child: Text(label, style: const TextStyle(fontSize: 18))),
-          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+          SizedBox(width: 120, child: Text(label, style: Theme.of(context).textTheme.bodyMedium)),
+          Text(value, style: Theme.of(context).textTheme.titleLarge),
         ],
       ),
     );

@@ -3,16 +3,23 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/care/care_pill.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/errors/app_failure.dart';
 import '../domain/game_models.dart';
 import 'widgets/difficulty_picker.dart';
 import 'widgets/game_result_view.dart';
 import 'widgets/game_session_recorder.dart';
 
-const _colors = [Colors.red, Colors.blue, Colors.green, Colors.amber];
+// Four clearly distinct hues from the Sathi palette (the game needs distinct colours).
+const _colors = [CareColors.danger, CareColors.accentBlue, CareColors.primary, CareColors.accentAmber];
 const _roundsPerSession = 3;
 
-int _baseLengthForDifficulty(int difficulty) => switch (difficulty) { 1 => 3, 2 => 4, _ => 5 };
+int _baseLengthForDifficulty(int difficulty) => switch (difficulty) {
+  1 => 3,
+  2 => 4,
+  _ => 5,
+};
 
 /// "Simon says": watch a sequence of colors light up, then repeat it back in order.
 /// Sequence length grows each round; a wrong tap ends the session immediately.
@@ -123,7 +130,7 @@ class _SequenceRecallScreenState extends ConsumerState<SequenceRecallScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Round ${_round + 1} of $_roundsPerSession', style: const TextStyle(fontSize: 20)),
+          CareStatusPill(label: 'Round ${_round + 1} of $_roundsPerSession'),
           const SizedBox(height: 12),
           Text(_showingSequence ? 'Watch...' : 'Your turn!', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 32),
@@ -140,7 +147,7 @@ class _SequenceRecallScreenState extends ConsumerState<SequenceRecallScreen> {
                     duration: const Duration(milliseconds: 150),
                     decoration: BoxDecoration(
                       color: _highlighted == i ? _colors[i] : _colors[i].withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(CareRadius.card),
                     ),
                   ),
                 ),

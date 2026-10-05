@@ -3,10 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('uses the explicit override when provided, regardless of platform or build mode', () {
-    expect(
-      AppConfig.resolveApiBaseUrl(override: 'https://api.example.com', isReleaseMode: true, isAndroid: false),
-      'https://api.example.com',
-    );
+    expect(AppConfig.resolveApiBaseUrl(override: 'https://api.example.com', isReleaseMode: true, isAndroid: false), 'https://api.example.com');
   });
 
   test('falls back to the Android emulator host alias in debug/profile mode', () {
@@ -18,9 +15,6 @@ void main() {
   });
 
   test('a release build with no override fails loudly instead of silently using a dev URL', () {
-    expect(
-      () => AppConfig.resolveApiBaseUrl(override: '', isReleaseMode: true, isAndroid: false),
-      throwsA(isA<StateError>()),
-    );
+    expect(() => AppConfig.resolveApiBaseUrl(override: '', isReleaseMode: true, isAndroid: false), throwsA(isA<StateError>()));
   });
 }

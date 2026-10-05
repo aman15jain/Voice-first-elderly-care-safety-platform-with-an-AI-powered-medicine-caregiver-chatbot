@@ -13,12 +13,7 @@ const _receiveTimeout = Duration(seconds: 10);
 /// No interceptor: these calls never need — and must not wait on — an access token.
 final authDioProvider = Provider<Dio>((ref) {
   return Dio(
-    BaseOptions(
-      baseUrl: AppConfig.apiBaseUrl,
-      connectTimeout: _connectTimeout,
-      receiveTimeout: _receiveTimeout,
-      headers: {'Accept': 'application/json'},
-    ),
+    BaseOptions(baseUrl: AppConfig.apiBaseUrl, connectTimeout: _connectTimeout, receiveTimeout: _receiveTimeout, headers: {'Accept': 'application/json'}),
   );
 });
 
@@ -26,12 +21,7 @@ final authDioProvider = Provider<Dio>((ref) {
 /// transparently refreshes it once on a 401 (see AuthInterceptor).
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
-    BaseOptions(
-      baseUrl: AppConfig.apiBaseUrl,
-      connectTimeout: _connectTimeout,
-      receiveTimeout: _receiveTimeout,
-      headers: {'Accept': 'application/json'},
-    ),
+    BaseOptions(baseUrl: AppConfig.apiBaseUrl, connectTimeout: _connectTimeout, receiveTimeout: _receiveTimeout, headers: {'Accept': 'application/json'}),
   );
   dio.interceptors.add(AuthInterceptor(ref.watch(tokenStorageProvider), AppConfig.apiBaseUrl));
   // Must come after AuthInterceptor so a retried request still carries a refreshed token.

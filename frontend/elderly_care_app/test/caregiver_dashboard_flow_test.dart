@@ -7,14 +7,31 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/pump_app.dart';
 
-const _caregiver = AppUser(id: 'cg1', email: 'caregiver@example.com', role: AppRole.caregiver, preferredLanguage: 'en', fullName: 'Alex', notifyOnMissedDose: true);
+const _caregiver = AppUser(
+  id: 'cg1',
+  email: 'caregiver@example.com',
+  role: AppRole.caregiver,
+  preferredLanguage: 'en',
+  fullName: 'Alex',
+  notifyOnMissedDose: true,
+);
 
 ElderDashboardRow _row({required String elderId, required String name, int? takenRate, bool activeEmergency = false}) {
   return ElderDashboardRow(
     elderId: elderId,
     elderName: name,
     elderEmail: '$elderId@example.com',
-    adherence: AdherenceSummary(from: '2026-01-01', to: '2026-01-30', scheduled: 0, reminded: 0, taken: takenRate == null ? 0 : 1, skipped: 0, missed: 0, totalDue: takenRate == null ? 0 : 1, takenRate: takenRate),
+    adherence: AdherenceSummary(
+      from: '2026-01-01',
+      to: '2026-01-30',
+      scheduled: 0,
+      reminded: 0,
+      taken: takenRate == null ? 0 : 1,
+      skipped: 0,
+      missed: 0,
+      totalDue: takenRate == null ? 0 : 1,
+      takenRate: takenRate,
+    ),
     activity: const ElderActivitySummary(daysInRange: 7, activeDays: 3, medicineInteractionDays: 3, gameSessionDays: 1),
     activeEmergency: activeEmergency,
   );
@@ -28,16 +45,21 @@ Future<void> _loginAsCaregiver(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('shows an invite prompt when the caregiver has no linked elders', (tester) async {
+  testWidgets('with no linked elders, home offers to connect someone and leads to the Elders tab', (tester) async {
     final harness = await pumpApp(tester);
     harness.auth.userToReturn = _caregiver;
     harness.dashboard.dashboardToReturn = const [];
     await _loginAsCaregiver(tester);
 
-    expect(find.text('No elders linked yet.'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Connect Someone'), 250, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    expect(find.text('No loved one connected yet.'), findsOneWidget);
+    await tester.tap(find.text('Connect Someone'));
+    await tester.pumpAndSettle();
+    expect(find.text('Your Elders'), findsOneWidget);
   });
 
-  testWidgets('shows adherence rate, active days and an emergency banner per linked elder', (tester) async {
+  testWidgets('shows each linked elder (switchable), 30-day adherence, active days and an emergency banner', (tester) async {
     final harness = await pumpApp(tester);
     harness.auth.userToReturn = _caregiver;
     harness.dashboard.dashboardToReturn = [
@@ -45,13 +67,39 @@ void main() {
       _row(elderId: 'e2', name: 'Grandpa Joe', activeEmergency: true),
     ];
     await _loginAsCaregiver(tester);
+    final page = find.byType(Scrollable).first;
 
-    expect(find.text('Grandma Rose'), findsOneWidget);
-    expect(find.text('90% taken (30d)'), findsOneWidget);
-    expect(find.text('Grandpa Joe'), findsOneWidget);
+    // Emergency surfaces for any linked elder, even one not currently selected.
+    expect(find.bySemanticsLabel('Emergency alert. Please check on Grandpa Joe.'), findsOneWidget);
+
+    // First elder is selected by default.
+    await tester.scrollUntilVisible(find.bySemanticsLabel('Activity: Active 3 of last 7 days'), 300, scrollable: page);
+    expect(find.bySemanticsLabel('Viewing Grandma Rose. Change loved one.'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('90%'), 300, scrollable: page);
+    expect(find.text('90%'), findsOneWidget);
+
+    // Switch to the second elder through the loved-one picker.
+    await tester.scrollUntilVisible(find.bySemanticsLabel('Viewing Grandma Rose. Change loved one.'), -300, scrollable: page);
+    await tester.tap(find.bySemanticsLabel('Viewing Grandma Rose. Change loved one.'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'Grandpa Joe'));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Viewing Grandpa Joe. Change loved one.'), findsOneWidget);
+    expect(find.bySemanticsLabel('Safety: Active emergency'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('No doses due yet'), 300, scrollable: page);
     expect(find.text('No doses due yet'), findsOneWidget);
-    expect(find.text('Active emergency — check the Alerts tab'), findsOneWidget);
-    expect(find.text('3/7 active days'), findsNWidgets(2));
+  });
+
+  testWidgets('View Alert on the emergency banner opens the Alerts tab', (tester) async {
+    final harness = await pumpApp(tester);
+    harness.auth.userToReturn = _caregiver;
+    harness.dashboard.dashboardToReturn = [_row(elderId: 'e2', name: 'Grandpa Joe', activeEmergency: true)];
+    await _loginAsCaregiver(tester);
+
+    await tester.tap(find.text('View Alert'));
+    await tester.pumpAndSettle();
+    expect(find.text('View Alert'), findsNothing);
+    expect(find.widgetWithText(AppBar, 'Alerts'), findsOneWidget);
   });
 
   testWidgets('the Notices tab lists notifications and marking one read updates it', (tester) async {
@@ -62,7 +110,7 @@ void main() {
     ];
     await _loginAsCaregiver(tester);
 
-    await tester.tap(find.text('Notices'));
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Notices'));
     await tester.pumpAndSettle();
 
     expect(find.text('A medicine dose was missed'), findsOneWidget);

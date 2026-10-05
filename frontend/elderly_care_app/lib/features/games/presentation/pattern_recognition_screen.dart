@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/care/care_pill.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/errors/app_failure.dart';
 import '../domain/game_models.dart';
 import 'widgets/difficulty_picker.dart';
@@ -12,7 +14,11 @@ import 'widgets/game_session_recorder.dart';
 const _palette = ['🔵', '🔴', '🟢', '🟡', '🟣'];
 const _roundsPerSession = 5;
 
-int _periodForDifficulty(int difficulty) => switch (difficulty) { 1 => 2, 2 => 2, _ => 3 };
+int _periodForDifficulty(int difficulty) => switch (difficulty) {
+  1 => 2,
+  2 => 2,
+  _ => 3,
+};
 
 class _Round {
   _Round(int period) {
@@ -133,7 +139,7 @@ class _PatternRecognitionScreenState extends ConsumerState<PatternRecognitionScr
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Round ${_round + 1} of $_roundsPerSession', style: const TextStyle(fontSize: 18)),
+          CareStatusPill(label: 'Round ${_round + 1} of $_roundsPerSession'),
           const SizedBox(height: 28),
           Wrap(
             spacing: 12,
@@ -143,7 +149,7 @@ class _PatternRecognitionScreenState extends ConsumerState<PatternRecognitionScr
             ],
           ),
           const SizedBox(height: 40),
-          const Text('What comes next?', style: TextStyle(fontSize: 20)),
+          Text('What comes next?', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -158,10 +164,13 @@ class _PatternRecognitionScreenState extends ConsumerState<PatternRecognitionScr
                       height: 72,
                       decoration: BoxDecoration(
                         color: _selectedOption == null
-                            ? Colors.grey.shade100
-                            : (option == round.correctAnswer ? Colors.green.shade100 : (option == _selectedOption ? Colors.red.shade100 : Colors.grey.shade100)),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.black12),
+                            ? CareColors.surface
+                            : (option == round.correctAnswer
+                                  ? CareColors.primaryTint
+                                  : (option == _selectedOption ? CareColors.dangerSoft : CareColors.surface)),
+                        borderRadius: BorderRadius.circular(CareRadius.tile),
+                        border: Border.all(color: CareColors.cardBorder),
+                        boxShadow: CareShadows.tile,
                       ),
                       alignment: Alignment.center,
                       child: Text(option, style: const TextStyle(fontSize: 32)),

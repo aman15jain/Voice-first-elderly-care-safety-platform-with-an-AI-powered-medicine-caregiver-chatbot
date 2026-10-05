@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:elderly_care_app/features/activity/data/activity_repository.dart';
 import 'package:elderly_care_app/features/activity/domain/daily_activity.dart';
+import 'package:elderly_care_app/features/ai/data/ai_repository.dart';
 import 'package:elderly_care_app/features/dashboard/data/dashboard_repository.dart';
 import 'package:elderly_care_app/features/dashboard/domain/elder_dashboard_row.dart';
 import 'package:elderly_care_app/features/emergency/data/emergency_repository.dart';
@@ -24,16 +25,23 @@ class FakeMedicinesRepository extends MedicinesRepository {
   List<MedicineDose> dosesToReturn = const [];
   bool throwNetworkErrorOnFetch = false;
 
-  DioException _networkError() => DioException(requestOptions: RequestOptions(path: '/api/doses'), type: DioExceptionType.connectionError);
+  /// The elderId of the most recent caregiver-scoped dose request (null for elder calls).
+  String? lastDosesElderId;
+
+  DioException _networkError() => DioException(
+    requestOptions: RequestOptions(path: '/api/doses'),
+    type: DioExceptionType.connectionError,
+  );
 
   @override
-  Future<List<Medicine>> listMedicines() async {
+  Future<List<Medicine>> listMedicines({String? elderId}) async {
     if (throwNetworkErrorOnFetch) throw _networkError();
     return medicinesToReturn;
   }
 
   @override
-  Future<List<MedicineDose>> listDoses({DateTime? from, DateTime? to}) async {
+  Future<List<MedicineDose>> listDoses({DateTime? from, DateTime? to, String? elderId}) async {
+    lastDosesElderId = elderId;
     if (throwNetworkErrorOnFetch) throw _networkError();
     return dosesToReturn;
   }
@@ -84,7 +92,10 @@ class FakeActivityRepository extends ActivityRepository {
   @override
   Future<void> recordAppOpened() async {
     if (throwNetworkErrorOnAppOpened) {
-      throw DioException(requestOptions: RequestOptions(path: '/api/activity/app-opened'), type: DioExceptionType.connectionError);
+      throw DioException(
+        requestOptions: RequestOptions(path: '/api/activity/app-opened'),
+        type: DioExceptionType.connectionError,
+      );
     }
     appOpenedCallCount++;
   }
@@ -109,7 +120,13 @@ class FakeEmergencyRepository extends EmergencyRepository {
 
   @override
   Future<EmergencyContact> createContact({required String name, required String phone, String? relationship}) async {
-    final contact = EmergencyContact(id: 'new-${contactsToReturn.length + 1}', name: name, phone: phone, relationship: relationship, priority: contactsToReturn.length + 1);
+    final contact = EmergencyContact(
+      id: 'new-${contactsToReturn.length + 1}',
+      name: name,
+      phone: phone,
+      relationship: relationship,
+      priority: contactsToReturn.length + 1,
+    );
     contactsToReturn = [...contactsToReturn, contact];
     return contact;
   }
@@ -117,7 +134,14 @@ class FakeEmergencyRepository extends EmergencyRepository {
   @override
   Future<SosResult> triggerSOS({double? latitude, double? longitude}) async {
     lastSosLocation = (latitude: latitude, longitude: longitude);
-    final event = EmergencyEvent(id: 'e1', elderId: 'elder1', status: EmergencyEventStatus.active, triggeredAt: DateTime.now(), latitude: latitude, longitude: longitude);
+    final event = EmergencyEvent(
+      id: 'e1',
+      elderId: 'elder1',
+      status: EmergencyEventStatus.active,
+      triggeredAt: DateTime.now(),
+      latitude: latitude,
+      longitude: longitude,
+    );
     eventsToReturn = [event];
     return SosResult(event: event, contacts: contactsToReturn);
   }
@@ -129,7 +153,14 @@ class FakeEmergencyRepository extends EmergencyRepository {
   Future<void> resolve(String eventId) async {
     eventsToReturn = eventsToReturn.map((e) {
       if (e.id != eventId) return e;
-      return EmergencyEvent(id: e.id, elderId: e.elderId, status: EmergencyEventStatus.resolved, triggeredAt: e.triggeredAt, latitude: e.latitude, longitude: e.longitude);
+      return EmergencyEvent(
+        id: e.id,
+        elderId: e.elderId,
+        status: EmergencyEventStatus.resolved,
+        triggeredAt: e.triggeredAt,
+        latitude: e.latitude,
+        longitude: e.longitude,
+      );
     }).toList();
   }
 }
@@ -139,9 +170,13 @@ class FakeDashboardRepository extends DashboardRepository {
 
   List<ElderDashboardRow> dashboardToReturn = const [];
   List<DailyAdherencePoint> trendToReturn = const [];
+  Object? errorToThrow;
 
   @override
-  Future<List<ElderDashboardRow>> getDashboard() async => dashboardToReturn;
+  Future<List<ElderDashboardRow>> getDashboard() async {
+    if (errorToThrow != null) throw errorToThrow!;
+    return dashboardToReturn;
+  }
 
   @override
   Future<List<DailyAdherencePoint>> getAdherenceTrend(String elderId) async => trendToReturn;
@@ -162,5 +197,20 @@ class FakeNotificationsRepository extends NotificationsRepository {
     notificationsToReturn = notificationsToReturn
         .map((n) => n.id == id ? AppNotification(id: n.id, type: n.type, title: n.title, body: n.body, createdAt: n.createdAt, readAt: DateTime.now()) : n)
         .toList();
+  }
+}
+
+class FakeAiRepository extends AiRepository {
+  FakeAiRepository() : super(Dio());
+
+  CaregiverInsight insightToReturn = const CaregiverInsight(response: 'Medicines were taken on time this week.', sources: []);
+  Object? errorToThrow;
+  final requestedElderIds = <String>[];
+
+  @override
+  Future<CaregiverInsight> getCaregiverInsight(String elderId) async {
+    requestedElderIds.add(elderId);
+    if (errorToThrow != null) throw errorToThrow!;
+    return insightToReturn;
   }
 }

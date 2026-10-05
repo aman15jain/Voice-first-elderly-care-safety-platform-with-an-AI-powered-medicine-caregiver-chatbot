@@ -25,12 +25,7 @@ class VoiceInputService {
             completer.complete(result.recognizedWords);
           }
         },
-        listenOptions: SpeechListenOptions(
-          localeId: localeId,
-          listenMode: ListenMode.confirmation,
-          listenFor: timeout,
-          pauseFor: const Duration(seconds: 3),
-        ),
+        listenOptions: SpeechListenOptions(localeId: localeId, listenMode: ListenMode.confirmation, listenFor: timeout, pauseFor: const Duration(seconds: 3)),
       );
 
       final words = await completer.future.timeout(timeout + const Duration(seconds: 2), onTimeout: () => null);

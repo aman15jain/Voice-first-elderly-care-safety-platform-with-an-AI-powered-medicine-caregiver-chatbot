@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/care/care_states.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/utils/validators.dart';
 import '../../../shared/widgets/big_button.dart';
@@ -64,11 +66,7 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
     });
     try {
       final repo = ref.read(medicinesRepositoryProvider);
-      final medicine = await repo.createMedicine(
-        name: _name.text.trim(),
-        dosage: _dosage.text.trim(),
-        instructions: _instructions.text.trim(),
-      );
+      final medicine = await repo.createMedicine(name: _name.text.trim(), dosage: _dosage.text.trim(), instructions: _instructions.text.trim());
       await repo.createSchedule(
         medicineId: medicine.id,
         timesOfDay: _times.map(_toUtcHHmm).toList(),
@@ -92,7 +90,7 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
       appBar: AppBar(title: const Text('Add Medicine')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(CareSpacing.screenH - 4, CareSpacing.sm, CareSpacing.screenH - 4, CareSpacing.xl),
           child: Form(
             key: _formKey,
             child: Column(
@@ -127,26 +125,28 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
                           child: OutlinedButton.icon(
                             onPressed: () => _pickTime(i),
                             icon: const Icon(Icons.access_time),
-                            label: Text(_times[i].format(context), style: const TextStyle(fontSize: 20)),
+                            label: Text(_times[i].format(context)),
                           ),
                         ),
                         if (_times.length > 1)
-                          IconButton(icon: const Icon(Icons.remove_circle_outline), onPressed: () => _removeTime(i)),
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline),
+                            tooltip: 'Remove time',
+                            color: CareColors.danger,
+                            onPressed: () => _removeTime(i),
+                          ),
                       ],
                     ),
                   ),
-                TextButton.icon(onPressed: _addTime, icon: const Icon(Icons.add), label: const Text('Add another time', style: TextStyle(fontSize: 18))),
+                TextButton.icon(onPressed: _addTime, icon: const Icon(Icons.add), label: const Text('Add another time')),
                 const SizedBox(height: 20),
                 Text('What days?', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 Wrap(
-                  spacing: 8,
+                  spacing: CareSpacing.sm,
+                  runSpacing: CareSpacing.sm,
                   children: [
-                    ChoiceChip(
-                      label: const Text('Every day'),
-                      selected: _selectedDays.isEmpty,
-                      onSelected: (_) => setState(_selectedDays.clear),
-                    ),
+                    ChoiceChip(label: const Text('Every day'), selected: _selectedDays.isEmpty, onSelected: (_) => setState(_selectedDays.clear)),
                     for (var d = 0; d < 7; d++)
                       FilterChip(
                         label: Text(_weekdayLabels[d]),
@@ -155,10 +155,7 @@ class _AddMedicineScreenState extends ConsumerState<AddMedicineScreen> {
                       ),
                   ],
                 ),
-                if (_error != null) ...[
-                  const SizedBox(height: 20),
-                  Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 18), textAlign: TextAlign.center),
-                ],
+                if (_error != null) ...[const SizedBox(height: 20), CareInlineError(message: _error!)],
                 const SizedBox(height: 28),
                 BigButton(label: 'Save Medicine', icon: Icons.check, onPressed: _submit, isLoading: _isLoading),
               ],

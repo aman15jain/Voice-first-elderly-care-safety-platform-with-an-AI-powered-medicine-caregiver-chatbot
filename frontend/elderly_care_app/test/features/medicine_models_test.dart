@@ -11,18 +11,15 @@ void main() {
   });
 
   test('MedicineDose.fromJson converts scheduledFor to local time', () {
-    final dose = MedicineDose.fromJson({
-      'id': 'd1',
-      'medicineId': 'm1',
-      'scheduledFor': '2026-01-01T08:00:00.000Z',
-      'status': 'SCHEDULED',
-    });
+    final dose = MedicineDose.fromJson({'id': 'd1', 'medicineId': 'm1', 'scheduledFor': '2026-01-01T08:00:00.000Z', 'status': 'SCHEDULED'});
     expect(dose.scheduledFor.isUtc, isFalse);
     expect(dose.scheduledFor.toUtc().toIso8601String(), '2026-01-01T08:00:00.000Z');
   });
 
   test('DoseView falls back to a generic label when the medicine is missing', () {
-    final view = DoseView(dose: MedicineDose(id: 'd1', medicineId: 'm1', scheduledFor: DateTime(2026, 1, 1), status: DoseStatus.scheduled));
+    final view = DoseView(
+      dose: MedicineDose(id: 'd1', medicineId: 'm1', scheduledFor: DateTime(2026, 1, 1), status: DoseStatus.scheduled),
+    );
     expect(view.medicineName, 'Medicine');
     expect(view.dosage, '');
   });

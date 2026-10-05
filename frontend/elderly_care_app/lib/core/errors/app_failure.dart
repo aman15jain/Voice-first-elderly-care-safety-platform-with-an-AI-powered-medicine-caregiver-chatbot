@@ -11,10 +11,7 @@ class AppFailure {
   final String? code;
 
   static const _generic = AppFailure('Sorry, we could not complete that. Please try again.');
-  static const _networkUnreachable = AppFailure(
-    'Could not reach the server. Please check your connection and try again.',
-    code: 'NETWORK_UNREACHABLE',
-  );
+  static const _networkUnreachable = AppFailure('Could not reach the server. Please check your connection and try again.', code: 'NETWORK_UNREACHABLE');
 
   /// True for a request that never got a response at all (no connectivity, DNS failure,
   /// timeout) — distinct from a request the server actively rejected (4xx/5xx). Screens with

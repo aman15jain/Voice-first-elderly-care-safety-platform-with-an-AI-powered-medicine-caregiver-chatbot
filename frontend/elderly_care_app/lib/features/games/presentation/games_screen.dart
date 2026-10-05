@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/care/care_pill.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
@@ -36,7 +38,7 @@ class GamesScreen extends ConsumerWidget {
           loading: () => const LoadingView(),
           error: (e, _) => ErrorView(message: AppFailure.fromError(e).message, onRetry: () => ref.invalidate(gamesListProvider)),
           data: (list) => ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(CareSpacing.screenH - 4, CareSpacing.sm, CareSpacing.screenH - 4, CareSpacing.xl),
             itemCount: list.length,
             separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, i) => _GameCard(game: list[i]),
@@ -54,26 +56,26 @@ class _GameCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: EdgeInsets.zero,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
         onTap: () => context.push(_gameRoutes[game.type]!, extra: game),
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(CareSpacing.lg + 2),
           child: Row(
             children: [
-              Icon(_gameIcons[game.type], size: 40, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 16),
+              CareIconTile(icon: _gameIcons[game.type] ?? Icons.extension, color: CareColors.accentViolet, background: CareColors.accentVioletSoft, size: 56),
+              const SizedBox(width: CareSpacing.lg),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(game.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 4),
-                    Text(game.description, style: const TextStyle(fontSize: 16)),
+                    Text(game.name, style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 2),
+                    Text(game.description, style: Theme.of(context).textTheme.bodyMedium),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, size: 32),
+              const Icon(Icons.chevron_right, size: 30, color: CareColors.textMuted),
             ],
           ),
         ),
