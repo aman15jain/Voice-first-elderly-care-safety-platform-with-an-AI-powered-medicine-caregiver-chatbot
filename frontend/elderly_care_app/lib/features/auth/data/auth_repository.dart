@@ -15,12 +15,7 @@ class AuthRepository {
   final Dio _apiDio;
   final TokenStorage _tokenStorage;
 
-  Future<void> register({
-    required String email,
-    required String password,
-    required AppRole role,
-    required String fullName,
-  }) async {
+  Future<void> register({required String email, required String password, required AppRole role, required String fullName}) async {
     final res = await _authDio.post<Map<String, dynamic>>(
       '/api/auth/register',
       data: {'email': email, 'password': password, 'role': appRoleToApiString(role), 'fullName': fullName},
@@ -29,10 +24,7 @@ class AuthRepository {
   }
 
   Future<void> login({required String email, required String password}) async {
-    final res = await _authDio.post<Map<String, dynamic>>(
-      '/api/auth/login',
-      data: {'email': email, 'password': password},
-    );
+    final res = await _authDio.post<Map<String, dynamic>>('/api/auth/login', data: {'email': email, 'password': password});
     await _saveSession(res.data!);
   }
 
@@ -55,17 +47,12 @@ class AuthRepository {
 
   /// Caregiver-only. Returns the saved value so the caller doesn't need a second round-trip.
   Future<bool> updateNotificationPreferences({required bool notifyOnMissedDose}) async {
-    final res = await _apiDio.patch<Map<String, dynamic>>(
-      '/api/users/me/notification-preferences',
-      data: {'notifyOnMissedDose': notifyOnMissedDose},
-    );
+    final res = await _apiDio.patch<Map<String, dynamic>>('/api/users/me/notification-preferences', data: {'notifyOnMissedDose': notifyOnMissedDose});
     return res.data!['notifyOnMissedDose'] as bool;
   }
 
-  Future<void> _saveSession(Map<String, dynamic> body) => _tokenStorage.save(
-    accessToken: body['accessToken'] as String,
-    refreshToken: body['refreshToken'] as String,
-  );
+  Future<void> _saveSession(Map<String, dynamic> body) =>
+      _tokenStorage.save(accessToken: body['accessToken'] as String, refreshToken: body['refreshToken'] as String);
 }
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {

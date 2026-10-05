@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'care/care_states.dart';
+
 /// Honest placeholder for a feature whose phase hasn't arrived yet (voice, cognitive
 /// games, emergency SOS). It never pretends to work — it says plainly what's missing.
 class ComingSoonScreen extends StatelessWidget {
@@ -14,21 +16,7 @@ class ComingSoonScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 72, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(height: 20),
-                Text(title, style: Theme.of(context).textTheme.headlineMedium, textAlign: TextAlign.center),
-                const SizedBox(height: 12),
-                Text(description, style: Theme.of(context).textTheme.bodyLarge, textAlign: TextAlign.center),
-              ],
-            ),
-          ),
-        ),
+        child: CareEmptyState(icon: icon, title: title, message: description),
       ),
     );
   }

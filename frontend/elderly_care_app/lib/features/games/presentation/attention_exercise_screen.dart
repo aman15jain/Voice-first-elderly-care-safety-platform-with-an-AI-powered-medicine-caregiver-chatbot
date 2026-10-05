@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/care/care_pill.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/errors/app_failure.dart';
 import '../domain/game_models.dart';
 import 'widgets/difficulty_picker.dart';
@@ -14,7 +16,11 @@ const _symbolPairs = [('🔵', '🔴'), ('⭐', '🌙'), ('🍀', '🌸'), ('�
 const _roundsPerSession = 5;
 const _roundSeconds = 6;
 
-int _gridSizeForDifficulty(int difficulty) => switch (difficulty) { 1 => 2, 2 => 3, _ => 4 };
+int _gridSizeForDifficulty(int difficulty) => switch (difficulty) {
+  1 => 2,
+  2 => 3,
+  _ => 4,
+};
 
 /// Find the one symbol that's different from the rest, before the timer runs out.
 class AttentionExerciseScreen extends ConsumerStatefulWidget {
@@ -94,13 +100,8 @@ class _AttentionExerciseScreenState extends ConsumerState<AttentionExerciseScree
     if (_round >= _roundsPerSession) {
       final duration = DateTime.now().difference(_startedAt!).inSeconds.clamp(1, 3600);
       setState(
-        () => _result = GameSessionResult(
-          difficulty: _difficulty!,
-          score: _correctRounds * 100,
-          mistakes: _mistakes,
-          durationSeconds: duration,
-          completed: true,
-        ),
+        () =>
+            _result = GameSessionResult(difficulty: _difficulty!, score: _correctRounds * 100, mistakes: _mistakes, durationSeconds: duration, completed: true),
       );
     } else {
       Future<void>.delayed(const Duration(milliseconds: 400), _playRound);
@@ -148,8 +149,8 @@ class _AttentionExerciseScreenState extends ConsumerState<AttentionExerciseScree
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Round ${_round + 1} of $_roundsPerSession', style: const TextStyle(fontSize: 18)),
-              Text('$_secondsLeft s', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+              CareStatusPill(label: 'Round ${_round + 1} of $_roundsPerSession'),
+              CareStatusPill(label: '$_secondsLeft s', icon: Icons.timer_outlined, foreground: CareColors.warning, background: CareColors.warningSoft),
             ],
           ),
           const SizedBox(height: 20),
@@ -160,7 +161,12 @@ class _AttentionExerciseScreenState extends ConsumerState<AttentionExerciseScree
               itemBuilder: (context, i) => GestureDetector(
                 onTap: () => _onTapCell(i),
                 child: Container(
-                  decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(
+                    color: CareColors.surface,
+                    borderRadius: BorderRadius.circular(CareRadius.tile),
+                    border: Border.all(color: CareColors.cardBorder),
+                    boxShadow: CareShadows.tile,
+                  ),
                   alignment: Alignment.center,
                   child: Text(i == _oddIndex ? _different : _common, style: const TextStyle(fontSize: 28)),
                 ),

@@ -4,20 +4,38 @@ import 'package:flutter_test/flutter_test.dart';
 
 DioException _errorWith({int? status, Object? data}) => DioException(
   requestOptions: RequestOptions(path: '/api/x'),
-  response: status == null ? null : Response(requestOptions: RequestOptions(path: '/api/x'), statusCode: status, data: data),
+  response: status == null
+      ? null
+      : Response(
+          requestOptions: RequestOptions(path: '/api/x'),
+          statusCode: status,
+          data: data,
+        ),
 );
 
 void main() {
   test('passes through the backend message for a 4xx error', () {
     final failure = AppFailure.fromError(
-      _errorWith(status: 409, data: {'error': {'code': 'CONFLICT', 'message': 'An account with this email already exists'}}),
+      _errorWith(
+        status: 409,
+        data: {
+          'error': {'code': 'CONFLICT', 'message': 'An account with this email already exists'},
+        },
+      ),
     );
     expect(failure.message, 'An account with this email already exists');
     expect(failure.code, 'CONFLICT');
   });
 
   test('never surfaces the backend message for a 5xx error', () {
-    final failure = AppFailure.fromError(_errorWith(status: 500, data: {'error': {'code': 'INTERNAL_ERROR', 'message': 'db exploded'}}));
+    final failure = AppFailure.fromError(
+      _errorWith(
+        status: 500,
+        data: {
+          'error': {'code': 'INTERNAL_ERROR', 'message': 'db exploded'},
+        },
+      ),
+    );
     expect(failure.message, isNot(contains('db exploded')));
   });
 

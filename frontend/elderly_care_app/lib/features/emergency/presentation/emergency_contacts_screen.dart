@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/care/care_states.dart';
+import '../../../shared/widgets/care/care_pill.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/utils/validators.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
@@ -23,18 +26,16 @@ class EmergencyContactsScreen extends ConsumerWidget {
           loading: () => const LoadingView(),
           error: (e, _) => ErrorView(message: AppFailure.fromError(e).message, onRetry: () => ref.invalidate(emergencyContactsProvider)),
           data: (list) => list.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text(
-                      'No emergency contacts yet.\nAdd someone to call when it matters most.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 20),
-                    ),
-                  ),
+              ? const CareEmptyState(
+                  icon: Icons.contact_phone_outlined,
+                  iconColor: CareColors.danger,
+                  iconBackground: CareColors.dangerSoft,
+                  title: 'No emergency contacts yet.',
+                  message: 'Add someone to call when it matters most.',
                 )
               : ListView.separated(
-                  padding: const EdgeInsets.all(16),
+                  // Bottom padding keeps the last card clear of the floating Add button.
+                  padding: const EdgeInsets.fromLTRB(CareSpacing.screenH - 4, CareSpacing.sm, CareSpacing.screenH - 4, 104),
                   itemCount: list.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, i) => _ContactCard(contact: list[i]),
@@ -71,14 +72,23 @@ class EmergencyContactsScreen extends ConsumerWidget {
                   decoration: const InputDecoration(labelText: 'Name'),
                   validator: (v) => Validators.required(v, message: 'Please enter a name'),
                 ),
+                const SizedBox(height: CareSpacing.md),
                 TextFormField(
                   controller: phone,
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(labelText: 'Phone Number'),
                   validator: (v) => Validators.required(v, message: 'Please enter a phone number'),
                 ),
-                TextFormField(controller: relationship, decoration: const InputDecoration(labelText: 'Relationship (optional)')),
-                if (error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(error!, style: const TextStyle(color: Colors.red))),
+                const SizedBox(height: CareSpacing.md),
+                TextFormField(
+                  controller: relationship,
+                  decoration: const InputDecoration(labelText: 'Relationship (optional)'),
+                ),
+                if (error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: CareSpacing.md),
+                    child: CareInlineError(message: error!),
+                  ),
               ],
             ),
           ),
@@ -141,17 +151,15 @@ class _ContactCardState extends ConsumerState<_ContactCard> {
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: EdgeInsets.zero,
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        leading: const Icon(Icons.person, size: 36),
-        title: Text(widget.contact.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-        subtitle: Text(
-          [widget.contact.relationship, widget.contact.phone].where((s) => s != null && s.isNotEmpty).join(' • '),
-          style: const TextStyle(fontSize: 16),
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: CareSpacing.lg, vertical: CareSpacing.sm),
+        leading: const CareIconTile(icon: Icons.person, circle: true),
+        title: Text(widget.contact.name),
+        subtitle: Text([widget.contact.relationship, widget.contact.phone].where((s) => s != null && s.isNotEmpty).join(' • ')),
         trailing: _isDeleting
             ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-            : IconButton(icon: const Icon(Icons.delete_outline), onPressed: _delete),
+            : IconButton(icon: const Icon(Icons.delete_outline), tooltip: 'Remove contact', color: CareColors.danger, onPressed: _delete),
       ),
     );
   }

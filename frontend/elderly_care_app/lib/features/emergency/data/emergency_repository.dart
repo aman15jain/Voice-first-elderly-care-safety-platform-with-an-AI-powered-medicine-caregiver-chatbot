@@ -45,10 +45,7 @@ class EmergencyRepository {
   }
 
   Future<List<EmergencyEvent>> listEvents({String? elderId}) async {
-    final res = await _dio.get<Map<String, dynamic>>(
-      '/api/emergency/events',
-      queryParameters: {'elderId': ?elderId},
-    );
+    final res = await _dio.get<Map<String, dynamic>>('/api/emergency/events', queryParameters: {'elderId': ?elderId});
     return (res.data!['events'] as List).map((e) => EmergencyEvent.fromJson(e as Map<String, dynamic>)).toList();
   }
 

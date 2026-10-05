@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../shared/widgets/offline_banner.dart';
+import '../theme/care_tokens.dart';
 
 class ShellDestination {
   const ShellDestination({required this.path, required this.icon, required this.label});
@@ -24,13 +25,27 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final index = destinations.indexWhere((d) => currentPath == d.path);
-    return Scaffold(
-      body: Column(children: [const OfflineBanner(), Expanded(child: child)]),
-      bottomNavigationBar: NavigationBar(
+    // Colours, indicator and label styles come from the Sathi theme (CareTheme); the shell
+    // only adds the soft top shadow that separates the bar from the warm page.
+    final bar = DecoratedBox(
+      decoration: const BoxDecoration(
+        color: CareColors.surface,
+        boxShadow: [BoxShadow(color: Color(0x140B1F2A), blurRadius: 18, offset: Offset(0, -4))],
+      ),
+      child: NavigationBar(
         selectedIndex: index < 0 ? 0 : index,
         onDestinationSelected: (i) => context.go(destinations[i].path),
         destinations: [for (final d in destinations) NavigationDestination(icon: Icon(d.icon), label: d.label)],
       ),
+    );
+    return Scaffold(
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(child: child),
+        ],
+      ),
+      bottomNavigationBar: bar,
     );
   }
 }

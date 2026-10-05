@@ -8,6 +8,8 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/role_selection_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
+import '../../features/caregiver_onboarding/presentation/caregiver_intro_screen.dart';
+import '../../features/caregiver_onboarding/presentation/caregiver_welcome_screen.dart';
 import '../../features/activity/presentation/activity_screen.dart';
 import '../../features/emergency/presentation/caregiver_emergency_screen.dart';
 import '../../features/emergency/presentation/emergency_contacts_screen.dart';
@@ -32,6 +34,7 @@ import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/profile/presentation/settings_screen.dart';
 import '../../features/voice/presentation/voice_screen.dart';
+import '../../shared/widgets/care/care_page_transition.dart';
 import '../storage/token_storage.dart';
 import 'app_shell.dart';
 
@@ -50,7 +53,7 @@ const _caregiverTabs = [
   ShellDestination(path: '/caregiver/profile', icon: Icons.person, label: 'Profile'),
 ];
 
-const _publicPaths = ['/login', '/role-selection', '/register'];
+const _publicPaths = ['/login', '/role-selection', '/register', '/welcome'];
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final tokenStorage = ref.watch(tokenStorageProvider);
@@ -81,18 +84,39 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
       GoRoute(path: '/role-selection', builder: (context, state) => const RoleSelectionScreen()),
-      GoRoute(path: '/register', builder: (context, state) => RegisterScreen(role: state.extra as AppRole? ?? AppRole.elder)),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => RegisterScreen(role: state.extra as AppRole? ?? AppRole.elder),
+      ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      // Caregiver onboarding (2 steps): /welcome → /welcome/intro → the existing /login.
+      GoRoute(path: '/welcome', builder: (context, state) => const CaregiverWelcomeScreen()),
+      GoRoute(
+        path: '/welcome/intro',
+        pageBuilder: (context, state) => careOnboardingPage(key: state.pageKey, child: const CaregiverIntroScreen()),
+      ),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
       // Phase 1 connectivity check, kept reachable for diagnostics.
       GoRoute(path: '/diagnostics', builder: (context, state) => const HealthScreen()),
 
       GoRoute(path: '/voice', builder: (context, state) => const VoiceScreen()),
       GoRoute(path: '/games', builder: (context, state) => const GamesScreen()),
-      GoRoute(path: '/games/memory-match', builder: (context, state) => MemoryMatchScreen(game: state.extra as CognitiveGame)),
-      GoRoute(path: '/games/pattern-recognition', builder: (context, state) => PatternRecognitionScreen(game: state.extra as CognitiveGame)),
-      GoRoute(path: '/games/attention-exercise', builder: (context, state) => AttentionExerciseScreen(game: state.extra as CognitiveGame)),
-      GoRoute(path: '/games/sequence-recall', builder: (context, state) => SequenceRecallScreen(game: state.extra as CognitiveGame)),
+      GoRoute(
+        path: '/games/memory-match',
+        builder: (context, state) => MemoryMatchScreen(game: state.extra as CognitiveGame),
+      ),
+      GoRoute(
+        path: '/games/pattern-recognition',
+        builder: (context, state) => PatternRecognitionScreen(game: state.extra as CognitiveGame),
+      ),
+      GoRoute(
+        path: '/games/attention-exercise',
+        builder: (context, state) => AttentionExerciseScreen(game: state.extra as CognitiveGame),
+      ),
+      GoRoute(
+        path: '/games/sequence-recall',
+        builder: (context, state) => SequenceRecallScreen(game: state.extra as CognitiveGame),
+      ),
       GoRoute(path: '/activity', builder: (context, state) => const ActivityScreen()),
       GoRoute(path: '/emergency', builder: (context, state) => const SosScreen()),
       GoRoute(path: '/emergency/contacts', builder: (context, state) => const EmergencyContactsScreen()),
@@ -102,7 +126,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/medicines/add', builder: (context, state) => const AddMedicineScreen()),
       GoRoute(path: '/medicines/today', builder: (context, state) => const TodaysScheduleScreen()),
       GoRoute(path: '/medicines/history', builder: (context, state) => const MedicineHistoryScreen()),
-      GoRoute(path: '/medicines/:id', builder: (context, state) => MedicineDetailsScreen(medicine: state.extra as Medicine)),
+      GoRoute(
+        path: '/medicines/:id',
+        builder: (context, state) => MedicineDetailsScreen(medicine: state.extra as Medicine),
+      ),
 
       ShellRoute(
         builder: (context, state, child) => AppShell(currentPath: state.matchedLocation, destinations: _elderTabs, child: child),

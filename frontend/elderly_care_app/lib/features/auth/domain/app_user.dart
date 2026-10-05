@@ -23,14 +23,7 @@ String appRoleToApiString(AppRole role) {
 }
 
 class AppUser {
-  const AppUser({
-    required this.id,
-    required this.email,
-    required this.role,
-    required this.preferredLanguage,
-    this.fullName,
-    this.notifyOnMissedDose,
-  });
+  const AppUser({required this.id, required this.email, required this.role, required this.preferredLanguage, this.fullName, this.notifyOnMissedDose});
 
   final String id;
   final String email;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/connectivity_service.dart';
+import '../../core/theme/care_tokens.dart';
 
 /// A persistent, unmissable strip — not a toast that disappears — because an elder or
 /// caregiver needs to know *for as long as it's true* that actions may not be reaching the
@@ -19,7 +20,7 @@ class OfflineBanner extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      color: Colors.orange.shade800,
+      color: CareColors.warning,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: const Row(
         children: [

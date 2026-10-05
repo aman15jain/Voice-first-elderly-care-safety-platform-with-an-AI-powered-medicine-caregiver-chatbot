@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/care_tokens.dart';
 import '../application/dashboard_providers.dart';
 
 /// A small, dependency-free bar chart: one bar per day, height proportional to that day's
@@ -33,7 +34,7 @@ class AdherenceSparkline extends ConsumerWidget {
                         heightFactor: day.totalDue == 0 ? 0.08 : (0.08 + 0.92 * ((day.takenRate ?? 0) / 100)),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: day.totalDue == 0 ? Colors.grey.shade300 : _colorForRate(day.takenRate),
+                            color: day.totalDue == 0 ? CareColors.neutralSoft : _colorForRate(day.takenRate),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -49,9 +50,9 @@ class AdherenceSparkline extends ConsumerWidget {
   }
 
   Color _colorForRate(int? rate) {
-    if (rate == null) return Colors.grey.shade300;
-    if (rate >= 80) return Colors.green;
-    if (rate >= 50) return Colors.orange;
-    return Colors.red;
+    if (rate == null) return CareColors.neutralSoft;
+    if (rate >= 80) return CareColors.success;
+    if (rate >= 50) return CareColors.accentWarm;
+    return CareColors.danger;
   }
 }

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/care/care_states.dart';
+import '../../../shared/widgets/care/care_pill.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/location_service.dart';
 import '../../../core/services/phone_service.dart';
@@ -110,13 +113,7 @@ class _SosScreenState extends ConsumerState<SosScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Emergency'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.contacts),
-            tooltip: 'Emergency Contacts',
-            onPressed: () => context.push('/emergency/contacts'),
-          ),
-        ],
+        actions: [IconButton(icon: const Icon(Icons.contacts), tooltip: 'Emergency Contacts', onPressed: () => context.push('/emergency/contacts'))],
       ),
       body: SafeArea(
         child: activeEvent.when(
@@ -144,31 +141,40 @@ class _IdleView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('If you need help right now, press the button below.', style: TextStyle(fontSize: 20), textAlign: TextAlign.center),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: 220,
-              height: 220,
-              child: ElevatedButton(
-                onPressed: isTriggering ? null : onTrigger,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  foregroundColor: Colors.white,
-                  shape: const CircleBorder(),
-                  elevation: 6,
+            Text('If you need help right now, press the button below.', style: Theme.of(context).textTheme.titleMedium, textAlign: TextAlign.center),
+            const SizedBox(height: CareSpacing.xxl),
+            // Soft concentric halo so the SOS button reads as the one thing on the screen.
+            Container(
+              padding: const EdgeInsets.all(22),
+              decoration: const BoxDecoration(color: CareColors.dangerSoft, shape: BoxShape.circle),
+              child: SizedBox(
+                width: 220,
+                height: 220,
+                child: ElevatedButton(
+                  onPressed: isTriggering ? null : onTrigger,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: CareColors.danger,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: CareColors.danger.withValues(alpha: 0.6),
+                    shape: const CircleBorder(),
+                    elevation: 6,
+                    shadowColor: CareColors.danger,
+                  ),
+                  child: isTriggering
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.warning_amber, size: 56),
+                            SizedBox(height: 8),
+                            Text('SOS', style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800)),
+                          ],
+                        ),
                 ),
-                child: isTriggering
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.warning_amber, size: 56),
-                          SizedBox(height: 8),
-                          Text('SOS', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800)),
-                        ],
-                      ),
               ),
             ),
+            const SizedBox(height: CareSpacing.xl),
+            Text('Your caregivers will be alerted after you confirm.', style: Theme.of(context).textTheme.bodyMedium, textAlign: TextAlign.center),
           ],
         ),
       ),
@@ -190,37 +196,39 @@ class _ActiveEmergencyView extends ConsumerWidget {
         : 'Your caregivers have been notified.';
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(CareSpacing.screenH - 4, CareSpacing.sm, CareSpacing.screenH - 4, CareSpacing.xl),
       children: [
-        Card(
-          color: Colors.red.shade50,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Icon(Icons.warning_amber, color: Theme.of(context).colorScheme.error, size: 40),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Emergency Active', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
-                      Text(statusText, style: const TextStyle(fontSize: 16)),
-                    ],
-                  ),
+        Container(
+          padding: const EdgeInsets.all(CareSpacing.lg + 4),
+          decoration: BoxDecoration(
+            color: CareColors.dangerSoft,
+            borderRadius: BorderRadius.circular(CareRadius.card),
+            border: Border.all(color: CareColors.dangerBorder),
+          ),
+          child: Row(
+            children: [
+              const CareIconTile(icon: Icons.warning_amber, color: Colors.white, background: CareColors.danger, circle: true, size: 56),
+              const SizedBox(width: CareSpacing.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Emergency Active', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: CareColors.danger)),
+                    Text(statusText, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: CareColors.textDark)),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: CareSpacing.xl),
         Text('Call for Help', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 8),
+        const SizedBox(height: CareSpacing.sm),
         contacts.when(
-          loading: () => const LoadingView(),
-          error: (e, _) => Text(AppFailure.fromError(e).message),
+          loading: () => const CareInlineLoading(),
+          error: (e, _) => CareInlineError(message: AppFailure.fromError(e).message),
           data: (list) => list.isEmpty
-              ? const Text('No emergency contacts added yet.', style: TextStyle(fontSize: 18))
+              ? Text('No emergency contacts added yet.', style: Theme.of(context).textTheme.bodyMedium)
               : Column(children: list.map((c) => _ContactCallCard(contact: c)).toList()),
         ),
         const SizedBox(height: 28),
@@ -241,31 +249,27 @@ class _ContactCallCard extends ConsumerWidget {
     // icon and title/subtitle doesn't reliably fit a ListTile's trailing slot.
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(CareSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
-                const Icon(Icons.person, size: 32),
-                const SizedBox(width: 12),
+                const CareIconTile(icon: Icons.person, circle: true),
+                const SizedBox(width: CareSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(contact.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-                      Text(contact.relationship ?? contact.phone, style: const TextStyle(fontSize: 16)),
+                      Text(contact.name, style: Theme.of(context).textTheme.titleMedium),
+                      Text(contact.relationship ?? contact.phone, style: Theme.of(context).textTheme.bodyMedium),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: () => ref.read(phoneServiceProvider).call(contact.phone),
-              icon: const Icon(Icons.call),
-              label: const Text('Call'),
-            ),
+            const SizedBox(height: CareSpacing.md),
+            FilledButton.icon(onPressed: () => ref.read(phoneServiceProvider).call(contact.phone), icon: const Icon(Icons.call), label: const Text('Call')),
           ],
         ),
       ),

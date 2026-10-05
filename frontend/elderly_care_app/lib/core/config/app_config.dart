@@ -8,11 +8,8 @@ class AppConfig {
 
   static const String _override = String.fromEnvironment('API_BASE_URL');
 
-  static String get apiBaseUrl => resolveApiBaseUrl(
-    override: _override,
-    isReleaseMode: kReleaseMode,
-    isAndroid: !kIsWeb && defaultTargetPlatform == TargetPlatform.android,
-  );
+  static String get apiBaseUrl =>
+      resolveApiBaseUrl(override: _override, isReleaseMode: kReleaseMode, isAndroid: !kIsWeb && defaultTargetPlatform == TargetPlatform.android);
 
   /// Exposed for testing the release-mode guard below without needing an actual release build.
   @visibleForTesting

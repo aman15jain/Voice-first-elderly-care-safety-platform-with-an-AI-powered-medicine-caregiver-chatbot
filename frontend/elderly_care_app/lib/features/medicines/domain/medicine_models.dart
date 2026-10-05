@@ -18,13 +18,7 @@ DoseStatus doseStatusFromString(String value) {
 }
 
 class Medicine {
-  const Medicine({
-    required this.id,
-    required this.name,
-    required this.dosage,
-    required this.isActive,
-    this.instructions,
-  });
+  const Medicine({required this.id, required this.name, required this.dosage, required this.isActive, this.instructions});
 
   final String id;
   final String name;
@@ -72,12 +66,7 @@ class MedicineSchedule {
 }
 
 class MedicineDose {
-  const MedicineDose({
-    required this.id,
-    required this.medicineId,
-    required this.scheduledFor,
-    required this.status,
-  });
+  const MedicineDose({required this.id, required this.medicineId, required this.scheduledFor, required this.status});
 
   final String id;
   final String medicineId;

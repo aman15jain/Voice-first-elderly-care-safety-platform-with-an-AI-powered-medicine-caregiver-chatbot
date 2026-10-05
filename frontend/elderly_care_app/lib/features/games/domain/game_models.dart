@@ -16,13 +16,7 @@ GameType gameTypeFromString(String value) {
 }
 
 class CognitiveGame {
-  const CognitiveGame({
-    required this.id,
-    required this.type,
-    required this.name,
-    required this.description,
-    required this.suggestedDifficulty,
-  });
+  const CognitiveGame({required this.id, required this.type, required this.name, required this.description, required this.suggestedDifficulty});
 
   final String id;
   final GameType type;
@@ -41,13 +35,7 @@ class CognitiveGame {
 
 /// The result of one played round, computed entirely on-device by the game itself.
 class GameSessionResult {
-  const GameSessionResult({
-    required this.difficulty,
-    required this.score,
-    required this.mistakes,
-    required this.durationSeconds,
-    required this.completed,
-  });
+  const GameSessionResult({required this.difficulty, required this.score, required this.mistakes, required this.durationSeconds, required this.completed});
 
   final int difficulty;
   final int score;
@@ -55,11 +43,5 @@ class GameSessionResult {
   final int durationSeconds;
   final bool completed;
 
-  Map<String, dynamic> toJson() => {
-    'difficulty': difficulty,
-    'score': score,
-    'mistakes': mistakes,
-    'durationSeconds': durationSeconds,
-    'completed': completed,
-  };
+  Map<String, dynamic> toJson() => {'difficulty': difficulty, 'score': score, 'mistakes': mistakes, 'durationSeconds': durationSeconds, 'completed': completed};
 }

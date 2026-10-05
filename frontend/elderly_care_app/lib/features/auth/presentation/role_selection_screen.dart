@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/care_tokens.dart';
 import '../domain/app_user.dart';
 
 /// The first screen of registration: who is this account for? Kept as its own step
@@ -19,7 +20,9 @@ class RoleSelectionScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text('Who is this account for?', style: Theme.of(context).textTheme.headlineMedium, textAlign: TextAlign.center),
-              const SizedBox(height: 32),
+              const SizedBox(height: CareSpacing.sm),
+              const Text('Choose the one that fits — you can invite family later.', style: CareText.body, textAlign: TextAlign.center),
+              const SizedBox(height: CareSpacing.xxl),
               _RoleCard(
                 icon: Icons.person,
                 title: 'I am an Elder',
@@ -52,15 +55,19 @@ class _RoleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 1,
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
           child: Row(
             children: [
-              Icon(icon, size: 44, color: Theme.of(context).colorScheme.primary),
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(color: CareColors.primarySoft, borderRadius: BorderRadius.circular(20)),
+                child: Icon(icon, size: 32, color: CareColors.primary),
+              ),
               const SizedBox(width: 20),
               Expanded(
                 child: Column(

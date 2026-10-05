@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/care/care_states.dart';
+import '../../../shared/widgets/care/care_pill.dart';
+import '../../../shared/widgets/care/care_connect_logo.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/phone_service.dart';
 import '../../../core/services/voice_input_service.dart';
@@ -108,7 +112,7 @@ class _VoiceScreenState extends ConsumerState<VoiceScreen> {
       body: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(CareSpacing.screenH - 4),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -135,20 +139,25 @@ class _MicButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isBusy = state == VoiceUiState.listening || state == VoiceUiState.processing || state == VoiceUiState.speaking;
-    return SizedBox(
-      width: 180,
-      height: 180,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: state == VoiceUiState.listening ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
-          foregroundColor: Colors.white,
-          shape: const CircleBorder(),
-          elevation: 6,
+    // Soft halo ring, as on the onboarding pages, around the one big action.
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(color: state == VoiceUiState.listening ? CareColors.dangerSoft : CareColors.primarySoft, shape: BoxShape.circle),
+      child: SizedBox(
+        width: 180,
+        height: 180,
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: state == VoiceUiState.listening ? CareColors.danger : CareColors.primaryDark,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: CareColors.primary,
+            shape: const CircleBorder(),
+            elevation: 6,
+            shadowColor: CareColors.primaryDark,
+          ),
+          child: isBusy ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.mic, size: 64),
         ),
-        child: isBusy
-            ? const CircularProgressIndicator(color: Colors.white)
-            : const Icon(Icons.mic, size: 64),
       ),
     );
   }
@@ -161,12 +170,12 @@ class _IdleHints extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const Text('Tap the microphone and speak', style: TextStyle(fontSize: 20), textAlign: TextAlign.center),
-        const SizedBox(height: 16),
+        Text('Tap the microphone and speak', style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
+        const SizedBox(height: CareSpacing.lg),
         ..._examplePhrases.map(
           (phrase) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Text(phrase, style: const TextStyle(fontSize: 15, color: Colors.grey), textAlign: TextAlign.center),
+            padding: const EdgeInsets.symmetric(vertical: CareSpacing.xs),
+            child: Text(phrase, style: Theme.of(context).textTheme.bodyMedium, textAlign: TextAlign.center),
           ),
         ),
       ],
@@ -182,12 +191,21 @@ class _TranscriptCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+        padding: const EdgeInsets.all(CareSpacing.lg + 2),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('You said', style: Theme.of(context).textTheme.labelLarge),
-            Text('"$transcript"', style: const TextStyle(fontSize: 18)),
+            const CareIconTile(icon: Icons.person, size: 40, circle: true),
+            const SizedBox(width: CareSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('You said', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700)),
+                  Text('"$transcript"', style: Theme.of(context).textTheme.titleMedium),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -201,11 +219,20 @@ class _ResponseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Theme.of(context).colorScheme.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(response, style: const TextStyle(fontSize: 20)),
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(vertical: CareSpacing.sm - 2),
+      padding: const EdgeInsets.all(CareSpacing.lg + 2),
+      decoration: BoxDecoration(color: CareColors.primarySoft, borderRadius: BorderRadius.circular(CareRadius.card)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const CareConnectMark(size: 40),
+          const SizedBox(width: CareSpacing.md),
+          Expanded(
+            child: Text(response, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          ),
+        ],
       ),
     );
   }
@@ -217,12 +244,6 @@ class _ErrorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.red.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(message, style: const TextStyle(fontSize: 18)),
-      ),
-    );
+    return CareInlineError(message: message);
   }
 }

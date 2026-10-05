@@ -17,18 +17,8 @@ void main() {
   });
 
   test('EmergencyEvent.isActive is false only once resolved', () {
-    final active = EmergencyEvent.fromJson({
-      'id': 'e1',
-      'elderId': 'elder1',
-      'status': 'ACTIVE',
-      'triggeredAt': '2026-01-01T08:00:00.000Z',
-    });
-    final resolved = EmergencyEvent.fromJson({
-      'id': 'e2',
-      'elderId': 'elder1',
-      'status': 'RESOLVED',
-      'triggeredAt': '2026-01-01T08:00:00.000Z',
-    });
+    final active = EmergencyEvent.fromJson({'id': 'e1', 'elderId': 'elder1', 'status': 'ACTIVE', 'triggeredAt': '2026-01-01T08:00:00.000Z'});
+    final resolved = EmergencyEvent.fromJson({'id': 'e2', 'elderId': 'elder1', 'status': 'RESOLVED', 'triggeredAt': '2026-01-01T08:00:00.000Z'});
     expect(active.isActive, isTrue);
     expect(resolved.isActive, isFalse);
   });

@@ -34,9 +34,7 @@ void main() {
     expect(find.textContaining("You're offline"), findsNothing);
   });
 
-  testWidgets("todayScheduleProvider falls back to the cached copy when the network is unreachable, after a prior successful fetch", (
-    tester,
-  ) async {
+  testWidgets("todayScheduleProvider falls back to the cached copy when the network is unreachable, after a prior successful fetch", (tester) async {
     final medicines = FakeMedicinesRepository();
     medicines.medicinesToReturn = [const Medicine(id: 'm1', name: 'Metformin', dosage: '500mg', isActive: true)];
     medicines.dosesToReturn = [MedicineDose(id: 'd1', medicineId: 'm1', scheduledFor: DateTime.now(), status: DoseStatus.scheduled)];

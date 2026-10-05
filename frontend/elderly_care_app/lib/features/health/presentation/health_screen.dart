@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/care_tokens.dart';
+import '../../../shared/widgets/care/care_pill.dart';
 import '../data/health_repository.dart';
 import '../domain/health_status.dart';
 
@@ -14,10 +16,10 @@ class HealthScreen extends ConsumerWidget {
     final health = ref.watch(backendHealthProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Elderly Care')),
+      appBar: AppBar(title: const Text('Sathi')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(CareSpacing.screenH - 4, CareSpacing.sm, CareSpacing.screenH - 4, CareSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -26,19 +28,18 @@ class HealthScreen extends ConsumerWidget {
               health.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (_, _) => const _StatusRow(label: 'Server', ok: false),
-                data: (h) => Column(
-                  children: [
-                    const _StatusRow(label: 'Server', ok: true),
-                    _StatusRow(label: 'Database', ok: h.database == DependencyState.up),
-                    _StatusRow(label: 'AI service', ok: h.aiService == DependencyState.up),
-                  ],
+                data: (h) => Card(
+                  child: Column(
+                    children: [
+                      const _StatusRow(label: 'Server', ok: true),
+                      _StatusRow(label: 'Database', ok: h.database == DependencyState.up),
+                      _StatusRow(label: 'AI service', ok: h.aiService == DependencyState.up),
+                    ],
+                  ),
                 ),
               ),
               const Spacer(),
-              FilledButton(
-                onPressed: () => ref.invalidate(backendHealthProvider),
-                child: const Text('Check again'),
-              ),
+              FilledButton(onPressed: () => ref.invalidate(backendHealthProvider), child: const Text('Check again')),
             ],
           ),
         ),
@@ -54,14 +55,14 @@ class _StatusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = ok ? Colors.green.shade800 : Colors.red.shade800;
+    final (fg, bg) = ok ? (CareColors.success, CareColors.successSoft) : (CareColors.danger, CareColors.dangerSoft);
     return Semantics(
       label: '$label ${ok ? 'working' : 'not available'}',
       excludeSemantics: true,
       child: ListTile(
-        leading: Icon(ok ? Icons.check_circle : Icons.cancel, color: color, size: 36),
+        leading: CareIconTile(icon: ok ? Icons.check_circle : Icons.cancel, color: fg, background: bg, size: 44),
         title: Text(label),
-        trailing: Text(ok ? 'Working' : 'Not available', style: TextStyle(color: color, fontWeight: FontWeight.w700)),
+        trailing: CareStatusPill(label: ok ? 'Working' : 'Not available', foreground: fg, background: bg),
       ),
     );
   }

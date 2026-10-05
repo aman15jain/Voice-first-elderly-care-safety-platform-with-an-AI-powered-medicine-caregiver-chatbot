@@ -6,7 +6,9 @@ import 'package:elderly_care_app/core/services/voice_output_service.dart';
 import 'package:elderly_care_app/core/storage/local_cache.dart';
 import 'package:elderly_care_app/core/storage/token_storage.dart';
 import 'package:elderly_care_app/features/activity/data/activity_repository.dart';
+import 'package:elderly_care_app/features/ai/data/ai_repository.dart';
 import 'package:elderly_care_app/features/auth/data/auth_repository.dart';
+import 'package:elderly_care_app/features/auth/domain/app_user.dart';
 import 'package:elderly_care_app/features/dashboard/data/dashboard_repository.dart';
 import 'package:elderly_care_app/features/emergency/data/emergency_repository.dart';
 import 'package:elderly_care_app/features/family/data/family_repository.dart';
@@ -38,11 +40,19 @@ typedef TestHarness = ({
   FakeDashboardRepository dashboard,
   FakeNotificationsRepository notifications,
   FakeConnectivityService connectivity,
+  FakeAiRepository ai,
 });
 
 /// Pumps the full app with every network-touching repository replaced by an in-memory
 /// fake, so router/auth-bootstrap/navigation wiring can be tested without a live backend.
-Future<TestHarness> pumpApp(WidgetTester tester) async {
+///
+/// A logged-out start lands on the welcome screen (/welcome). By default this then taps its
+/// Sign In link, as a returning user would, so callers begin on the login form; pass
+/// `openLogin: false` to stay on the welcome screen.
+///
+/// [restoredSession] simulates a returning user with tokens already stored: the app boots
+/// straight into that user's home, and [openLogin] is ignored.
+Future<TestHarness> pumpApp(WidgetTester tester, {bool openLogin = true, AppUser? restoredSession}) async {
   // flutter_test's default surface (800x600, landscape-ish) does not match this app's
   // phone-only layouts: bottom-of-screen buttons on Home ended up obscured by the bottom
   // nav bar and taps silently hit the wrong tab instead. Use a realistic phone viewport.
@@ -65,7 +75,12 @@ Future<TestHarness> pumpApp(WidgetTester tester) async {
     dashboard: FakeDashboardRepository(),
     notifications: FakeNotificationsRepository(),
     connectivity: FakeConnectivityService(),
+    ai: FakeAiRepository(),
   );
+  if (restoredSession != null) {
+    harness.auth.userToReturn = restoredSession;
+    await tokenStorage.save(accessToken: 'fake-access', refreshToken: 'fake-refresh');
+  }
 
   await tester.pumpWidget(
     ProviderScope(
@@ -84,11 +99,19 @@ Future<TestHarness> pumpApp(WidgetTester tester) async {
         dashboardRepositoryProvider.overrideWithValue(harness.dashboard),
         notificationsRepositoryProvider.overrideWithValue(harness.notifications),
         connectivityServiceProvider.overrideWithValue(harness.connectivity),
+        aiRepositoryProvider.overrideWithValue(harness.ai),
         localCacheProvider.overrideWithValue(LocalCache(InMemoryKeyValueStore())),
       ],
       child: const ElderlyCareApp(),
     ),
   );
   await tester.pumpAndSettle();
+
+  if (openLogin && restoredSession == null) {
+    final signIn = find.text('Sign In');
+    await tester.ensureVisible(signIn);
+    await tester.tap(signIn);
+    await tester.pumpAndSettle();
+  }
   return harness;
 }

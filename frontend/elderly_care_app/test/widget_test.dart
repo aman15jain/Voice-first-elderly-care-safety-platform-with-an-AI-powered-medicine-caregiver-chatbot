@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:elderly_care_app/core/theme/app_theme.dart';
+import 'package:elderly_care_app/core/theme/care_theme.dart';
 import 'package:elderly_care_app/features/health/data/health_repository.dart';
 import 'package:elderly_care_app/features/health/domain/health_status.dart';
 import 'package:elderly_care_app/features/health/presentation/health_screen.dart';
@@ -19,14 +19,12 @@ class _FakeRepo extends HealthRepository {
 
 Widget _harness(Future<BackendHealth> Function() result) => ProviderScope(
   overrides: [healthRepositoryProvider.overrideWithValue(_FakeRepo(result))],
-  child: MaterialApp(theme: AppTheme.light(), home: const HealthScreen()),
+  child: MaterialApp(theme: CareTheme.data(), home: const HealthScreen()),
 );
 
 void main() {
   testWidgets('shows all services working', (tester) async {
-    await tester.pumpWidget(
-      _harness(() async => const BackendHealth(ok: true, database: DependencyState.up, aiService: DependencyState.up)),
-    );
+    await tester.pumpWidget(_harness(() async => const BackendHealth(ok: true, database: DependencyState.up, aiService: DependencyState.up)));
     await tester.pumpAndSettle();
     expect(find.text('Working'), findsNWidgets(3));
   });

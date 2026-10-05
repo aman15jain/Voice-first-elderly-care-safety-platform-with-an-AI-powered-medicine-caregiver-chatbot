@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/utils/validators.dart';
 import '../../../shared/widgets/big_button.dart';
+import '../../../shared/widgets/care/care_states.dart';
+import '../../../shared/widgets/care/care_connect_logo.dart';
 import '../application/auth_controller.dart';
 import '../domain/app_user.dart';
 
@@ -56,7 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: CareSpacing.screenH, vertical: CareSpacing.xl),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
               child: Form(
@@ -64,8 +67,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const _BrandLockup(),
+                    const SizedBox(height: CareSpacing.xl),
                     Text('Welcome Back', style: Theme.of(context).textTheme.headlineMedium, textAlign: TextAlign.center),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: CareSpacing.sm),
+                    const Text('Sign in to continue to Sathi.', style: CareText.body, textAlign: TextAlign.center),
+                    const SizedBox(height: CareSpacing.xxl),
                     TextFormField(
                       controller: _email,
                       keyboardType: TextInputType.emailAddress,
@@ -89,23 +96,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       validator: (v) => Validators.required(v, message: 'Please enter your password'),
                       onFieldSubmitted: (_) => _submit(),
                     ),
-                    if (_error != null) ...[
-                      const SizedBox(height: 16),
-                      Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 18), textAlign: TextAlign.center),
-                    ],
+                    if (_error != null) ...[const SizedBox(height: 16), CareInlineError(message: _error!)],
                     const SizedBox(height: 28),
                     BigButton(label: 'Log In', onPressed: _submit, isLoading: _isLoading),
                     const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () => context.push('/role-selection'),
-                      child: const Text('New here? Create an account', style: TextStyle(fontSize: 18)),
-                    ),
+                    TextButton(onPressed: () => context.push('/role-selection'), child: const Text('New here? Create an account')),
                   ],
                 ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Sathi mark + wordmark, centred — the same brand lockup as the onboarding pages.
+class _BrandLockup extends StatelessWidget {
+  const _BrandLockup();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: CareConnectLogo.brandName,
+      excludeSemantics: true,
+      child: Column(
+        children: [
+          const CareConnectMark(size: 64),
+          const SizedBox(height: CareSpacing.sm),
+          Text(CareConnectLogo.brandName, style: CareText.brandName.copyWith(fontSize: 30, color: CareColors.primary)),
+        ],
       ),
     );
   }

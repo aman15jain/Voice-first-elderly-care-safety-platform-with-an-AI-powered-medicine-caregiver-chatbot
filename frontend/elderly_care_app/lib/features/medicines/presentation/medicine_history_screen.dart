@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/care/care_pill.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
@@ -34,28 +36,36 @@ class _SummaryView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(CareSpacing.screenH - 4, CareSpacing.sm, CareSpacing.screenH - 4, CareSpacing.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('Last 30 days', style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
           const SizedBox(height: 20),
           if (summary.takenRate != null)
-            Center(
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: CareSpacing.xl),
+              decoration: BoxDecoration(color: CareColors.primarySoft, borderRadius: BorderRadius.circular(CareRadius.card)),
               child: Column(
                 children: [
-                  Text('${summary.takenRate}%', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 48)),
-                  const Text('Taken on Time', style: TextStyle(fontSize: 20)),
+                  Text('${summary.takenRate}%', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 52, color: CareColors.primaryDark)),
+                  Text('Taken on Time', style: Theme.of(context).textTheme.titleMedium),
                 ],
               ),
             )
           else
-            const Center(child: Text('No medicine history yet.', style: TextStyle(fontSize: 20))),
+            Center(child: Text('No medicine history yet.', style: Theme.of(context).textTheme.titleMedium)),
           const SizedBox(height: 28),
-          _StatRow(label: 'Taken', value: summary.taken, color: Colors.green, icon: Icons.check_circle),
-          _StatRow(label: 'Skipped', value: summary.skipped, color: Colors.orange, icon: Icons.remove_circle),
-          _StatRow(label: 'Missed', value: summary.missed, color: Colors.red, icon: Icons.cancel),
-          _StatRow(label: 'Still upcoming', value: summary.scheduled + summary.reminded, color: Colors.blueGrey, icon: Icons.schedule),
+          _StatRow(label: 'Taken', value: summary.taken, color: CareColors.success, background: CareColors.successSoft, icon: Icons.check_circle),
+          _StatRow(label: 'Skipped', value: summary.skipped, color: CareColors.warning, background: CareColors.warningSoft, icon: Icons.remove_circle),
+          _StatRow(label: 'Missed', value: summary.missed, color: CareColors.danger, background: CareColors.dangerSoft, icon: Icons.cancel),
+          _StatRow(
+            label: 'Still upcoming',
+            value: summary.scheduled + summary.reminded,
+            color: CareColors.neutral,
+            background: CareColors.neutralSoft,
+            icon: Icons.schedule,
+          ),
         ],
       ),
     );
@@ -63,19 +73,20 @@ class _SummaryView extends StatelessWidget {
 }
 
 class _StatRow extends StatelessWidget {
-  const _StatRow({required this.label, required this.value, required this.color, required this.icon});
+  const _StatRow({required this.label, required this.value, required this.color, required this.background, required this.icon});
   final String label;
   final int value;
   final Color color;
+  final Color background;
   final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        leading: Icon(icon, color: color, size: 32),
-        title: Text(label, style: const TextStyle(fontSize: 20)),
-        trailing: Text('$value', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+        leading: CareIconTile(icon: icon, color: color, background: background, size: 44),
+        title: Text(label),
+        trailing: Text('$value', style: Theme.of(context).textTheme.titleLarge),
       ),
     );
   }

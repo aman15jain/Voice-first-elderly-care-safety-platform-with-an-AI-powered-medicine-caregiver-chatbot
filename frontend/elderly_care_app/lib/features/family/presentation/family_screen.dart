@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/utils/validators.dart';
 import '../../../shared/widgets/big_button.dart';
+import '../../../shared/widgets/care/care_pill.dart';
+import '../../../shared/widgets/care/care_states.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
@@ -33,6 +36,18 @@ class FamilyScreen extends ConsumerWidget {
           error: (e, _) => ErrorView(message: AppFailure.fromError(e).message, onRetry: () => ref.invalidate(familyLinksProvider)),
           data: (list) {
             if (user == null) return const LoadingView();
+            if (list.isEmpty) {
+              return CareEmptyState(
+                icon: Icons.diversity_3,
+                title: isElder ? 'No caregivers linked yet.' : 'No loved one connected yet.',
+                message: isElder
+                    ? 'Invite a caregiver using the email of their Sathi account.'
+                    : 'Invite the person you care for using the email of their Sathi account.',
+                actionLabel: isElder ? 'Invite Caregiver' : 'Invite Elder',
+                actionIcon: Icons.person_add,
+                onAction: () => _showInviteDialog(context, ref, isElder: isElder),
+              );
+            }
             return list.isEmpty
                 ? Center(
                     child: Text(
@@ -44,7 +59,8 @@ class FamilyScreen extends ConsumerWidget {
                 : RefreshIndicator(
                     onRefresh: () async => ref.invalidate(familyLinksProvider),
                     child: ListView.separated(
-                      padding: const EdgeInsets.all(16),
+                      // Bottom padding keeps the last card clear of the floating Invite button.
+                      padding: const EdgeInsets.fromLTRB(CareSpacing.screenH - 4, CareSpacing.sm, CareSpacing.screenH - 4, 96),
                       itemCount: list.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, i) => _LinkCard(link: list[i], viewerId: user.id),
@@ -53,11 +69,14 @@ class FamilyScreen extends ConsumerWidget {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showInviteDialog(context, ref, isElder: isElder),
-        icon: const Icon(Icons.person_add),
-        label: Text(isElder ? 'Invite Caregiver' : 'Invite Elder'),
-      ),
+      // On the empty state the invite action is in the centre already.
+      floatingActionButton: (links.value?.isEmpty ?? false)
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => _showInviteDialog(context, ref, isElder: isElder),
+              icon: const Icon(Icons.person_add),
+              label: Text(isElder ? 'Invite Caregiver' : 'Invite Elder'),
+            ),
     );
   }
 
@@ -146,21 +165,36 @@ class _LinkCardState extends ConsumerState<_LinkCard> {
     final link = widget.link;
     final repo = ref.read(familyRepositoryProvider);
     final isInvitedParty = link.isInvitedParty(widget.viewerId);
+    final name = link.counterpartLabel(widget.viewerId);
+
+    final header = Row(
+      children: [
+        Container(
+          width: 52,
+          height: 52,
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(color: CareColors.primarySoft, shape: BoxShape.circle),
+          child: Text(
+            name.characters.first.toUpperCase(),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CareColors.primaryDark),
+          ),
+        ),
+        const SizedBox(width: CareSpacing.md),
+        Expanded(
+          child: Text(name, style: Theme.of(context).textTheme.titleMedium, maxLines: 2, overflow: TextOverflow.ellipsis),
+        ),
+        const SizedBox(width: CareSpacing.sm),
+        _StatusChip(status: link.status),
+      ],
+    );
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(CareSpacing.lg + 2),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(link.counterpartLabel(widget.viewerId), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600)),
-                ),
-                _StatusChip(status: link.status),
-              ],
-            ),
+            header,
             const SizedBox(height: 12),
             if (link.status == FamilyLinkStatus.pending && isInvitedParty)
               Row(
@@ -175,7 +209,7 @@ class _LinkCardState extends ConsumerState<_LinkCard> {
                 ],
               )
             else if (link.status == FamilyLinkStatus.pending)
-              const Text('Waiting for a response...', style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic))
+              Text('Waiting for a response...', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic))
             else if (link.status == FamilyLinkStatus.accepted)
               BigOutlinedButton(label: 'Remove', icon: Icons.link_off, onPressed: _isSubmitting ? null : _revoke),
           ],
@@ -190,13 +224,10 @@ class _StatusChip extends StatelessWidget {
   final FamilyLinkStatus status;
 
   @override
-  Widget build(BuildContext context) {
-    final (label, color) = switch (status) {
-      FamilyLinkStatus.accepted => ('Connected', Colors.green),
-      FamilyLinkStatus.pending => ('Pending', Colors.orange),
-      FamilyLinkStatus.declined => ('Declined', Colors.grey),
-      FamilyLinkStatus.revoked => ('Removed', Colors.grey),
-    };
-    return Chip(label: Text(label), backgroundColor: color.withValues(alpha: 0.15));
-  }
+  Widget build(BuildContext context) => switch (status) {
+    FamilyLinkStatus.accepted => const CareStatusPill(label: 'Connected'),
+    FamilyLinkStatus.pending => const CareStatusPill(label: 'Pending', foreground: CareColors.warning, background: CareColors.warningSoft),
+    FamilyLinkStatus.declined => const CareStatusPill(label: 'Declined', foreground: CareColors.neutral, background: CareColors.neutralSoft),
+    FamilyLinkStatus.revoked => const CareStatusPill(label: 'Removed', foreground: CareColors.neutral, background: CareColors.neutralSoft),
+  };
 }

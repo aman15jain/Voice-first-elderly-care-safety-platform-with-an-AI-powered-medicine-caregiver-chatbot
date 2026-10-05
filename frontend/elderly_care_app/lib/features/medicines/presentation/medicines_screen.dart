@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/care/care_states.dart';
+import '../../../shared/widgets/care/care_pill.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
@@ -27,7 +30,8 @@ class MedicinesScreen extends ConsumerWidget {
               : RefreshIndicator(
                   onRefresh: () async => ref.invalidate(medicinesListProvider),
                   child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
+                    // Bottom padding keeps the last card clear of the floating Add button.
+                    padding: const EdgeInsets.fromLTRB(CareSpacing.screenH - 4, CareSpacing.sm, CareSpacing.screenH - 4, 104),
                     itemCount: list.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, i) => _MedicineCard(medicine: list[i]),
@@ -38,7 +42,7 @@ class MedicinesScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/medicines/add'),
         icon: const Icon(Icons.add),
-        label: const Text('Add Medicine', style: TextStyle(fontSize: 18)),
+        label: const Text('Add Medicine'),
       ),
     );
   }
@@ -49,20 +53,12 @@ class _EmptyMedicines extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.medication_outlined, size: 64, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 16),
-            Text('No medicines yet', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            const Text('Tap "Add Medicine" to get started.', textAlign: TextAlign.center),
-          ],
-        ),
-      ),
+    return const CareEmptyState(
+      icon: Icons.medication_outlined,
+      iconColor: CareColors.accentWarm,
+      iconBackground: CareColors.accentWarmSoft,
+      title: 'No medicines yet',
+      message: 'Tap "Add Medicine" to get started.',
     );
   }
 }
@@ -74,12 +70,13 @@ class _MedicineCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: EdgeInsets.zero,
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        leading: const Icon(Icons.medication, size: 36),
-        title: Text(medicine.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600)),
-        subtitle: Text(medicine.dosage, style: const TextStyle(fontSize: 18)),
-        trailing: const Icon(Icons.chevron_right, size: 32),
+        contentPadding: const EdgeInsets.symmetric(horizontal: CareSpacing.lg, vertical: CareSpacing.sm),
+        leading: const CareIconTile(icon: Icons.medication, color: CareColors.accentWarm, background: CareColors.accentWarmSoft),
+        title: Text(medicine.name),
+        subtitle: Text(medicine.dosage),
+        trailing: const Icon(Icons.chevron_right, size: 30, color: CareColors.textMuted),
         onTap: () => context.push('/medicines/${medicine.id}', extra: medicine),
       ),
     );

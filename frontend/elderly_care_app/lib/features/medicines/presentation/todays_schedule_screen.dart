@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../shared/widgets/care/care_states.dart';
+import '../../../shared/widgets/care/care_pill.dart';
+import '../../../core/theme/care_tokens.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
@@ -28,11 +31,15 @@ class TodaysScheduleScreen extends ConsumerWidget {
               if (freshness.fromCache) _CachedDataNotice(cachedAt: freshness.cachedAt),
               Expanded(
                 child: views.isEmpty
-                    ? const Center(child: Text('No medicines scheduled for today.', style: TextStyle(fontSize: 20)))
+                    ? const CareEmptyState(
+                        icon: Icons.event_available,
+                        title: 'No medicines scheduled for today.',
+                        message: 'Medicines you add with a schedule will show up here each day.',
+                      )
                     : RefreshIndicator(
                         onRefresh: () async => ref.invalidate(todayScheduleProvider),
                         child: ListView.separated(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.fromLTRB(CareSpacing.screenH - 4, CareSpacing.sm, CareSpacing.screenH - 4, CareSpacing.xl),
                           itemCount: views.length,
                           separatorBuilder: (_, _) => const SizedBox(height: 12),
                           itemBuilder: (context, i) => _DoseCard(view: views[i]),
@@ -54,14 +61,9 @@ class _CachedDataNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final when = cachedAt == null ? '' : ' (saved ${DateFormat.jm().format(cachedAt!)})';
-    return Container(
-      width: double.infinity,
-      color: Colors.blue.shade50,
-      padding: const EdgeInsets.all(12),
-      child: Text(
-        "Showing saved schedule from before you went offline$when. Pull down to refresh once you're back online.",
-        style: const TextStyle(fontSize: 14),
-      ),
+    return CareInfoBanner(
+      icon: Icons.cloud_off,
+      message: "Showing saved schedule from before you went offline$when. Pull down to refresh once you're back online.",
     );
   }
 }
@@ -97,23 +99,28 @@ class _DoseCardState extends ConsumerState<_DoseCard> {
     final repo = ref.read(medicinesRepositoryProvider);
     final isPending = dose.status == DoseStatus.scheduled || dose.status == DoseStatus.reminded;
 
+    final text = Theme.of(context).textTheme;
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(CareSpacing.lg + 2),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
+                const CareIconTile(icon: Icons.medication, color: CareColors.accentWarm, background: CareColors.accentWarmSoft),
+                const SizedBox(width: CareSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(widget.view.medicineName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600)),
-                      Text('${widget.view.dosage} • $time', style: const TextStyle(fontSize: 18)),
+                      Text(widget.view.medicineName, style: text.titleMedium),
+                      Text('${widget.view.dosage} • $time', style: text.bodyMedium),
                     ],
                   ),
                 ),
+                const SizedBox(width: CareSpacing.sm),
                 _StatusBadge(status: dose.status),
               ],
             ),
@@ -152,17 +159,13 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, color, icon) = switch (status) {
-      DoseStatus.taken => ('Taken', Colors.green, Icons.check_circle),
-      DoseStatus.skipped => ('Skipped', Colors.orange, Icons.remove_circle),
-      DoseStatus.missed => ('Missed', Colors.red, Icons.cancel),
-      DoseStatus.reminded => ('Due', Colors.blue, Icons.notifications_active),
-      DoseStatus.scheduled => ('Upcoming', Colors.grey, Icons.schedule),
+    final (label, fg, bg, icon) = switch (status) {
+      DoseStatus.taken => ('Taken', CareColors.success, CareColors.successSoft, Icons.check_circle),
+      DoseStatus.skipped => ('Skipped', CareColors.warning, CareColors.warningSoft, Icons.remove_circle),
+      DoseStatus.missed => ('Missed', CareColors.danger, CareColors.dangerSoft, Icons.cancel),
+      DoseStatus.reminded => ('Due', CareColors.info, CareColors.infoSoft, Icons.notifications_active),
+      DoseStatus.scheduled => ('Upcoming', CareColors.neutral, CareColors.neutralSoft, Icons.schedule),
     };
-    return Chip(
-      avatar: Icon(icon, color: color, size: 20),
-      label: Text(label),
-      backgroundColor: color.withValues(alpha: 0.12),
-    );
+    return CareStatusPill(label: label, foreground: fg, background: bg, icon: icon);
   }
 }
