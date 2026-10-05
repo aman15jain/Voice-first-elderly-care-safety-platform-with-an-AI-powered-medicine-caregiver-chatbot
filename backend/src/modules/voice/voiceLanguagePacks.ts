@@ -70,7 +70,7 @@ export function matchIntent(transcript: string, language: string): IntentMatch {
  * knowledge base (incl. aliases like Glucophage) is Python's job.
  */
 const MEDICINE_QUESTION_PATTERN =
-  /\b(what is|what's|what does|side effects?|used for|purpose of|why do i take|tell me about|cause)\b/i;
+  /\b(what is|what's|what does|side effects?|used for|use of|uses of|use for|what for|purpose of|why do i take|tell me about|cause)\b/i;
 
 export function isMedicineKnowledgeQuestion(transcript: string): boolean {
   return MEDICINE_QUESTION_PATTERN.test(transcript);

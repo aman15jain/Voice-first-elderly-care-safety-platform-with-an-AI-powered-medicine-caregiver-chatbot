@@ -4,7 +4,7 @@ import type { EmergencyContactRecord, EmergencyRepository } from '../emergency/e
 import type { MedicinesRepository } from '../medicines/medicines.types';
 import type { DoseRepository } from '../reminders/reminders.types';
 import type { AiOrchestratorClient } from '../ai/ai.types';
-import { isMedicineKnowledgeQuestion, matchIntent } from './voiceLanguagePacks';
+import { matchIntent } from './voiceLanguagePacks';
 import { getResponses } from './voiceResponses';
 import type { VoiceProcessResult, VoiceRepository } from './voice.types';
 
@@ -27,14 +27,14 @@ export class VoiceService {
     private readonly medicines: Pick<MedicinesRepository, 'listMedicinesForElder'>,
     private readonly activity: ActivityService,
     private readonly emergency: Pick<EmergencyRepository, 'listContactsForElder'>,
-    private readonly ai?: Pick<AiOrchestratorClient, 'askMedicineQuestion'>,
+    private readonly ai?: Pick<AiOrchestratorClient, 'askGeneralQuestion'>,
   ) {}
 
   async process(elderId: string, transcript: string, language = 'en'): Promise<VoiceProcessResult> {
     const { intent, target } = matchIntent(transcript, language);
     const responses = getResponses(language);
 
-    if (intent === 'UNKNOWN' && this.ai && isMedicineKnowledgeQuestion(transcript)) {
+    if (intent === 'UNKNOWN' && this.ai) {
       const aiResult = await this.askAgenticAi(this.ai, elderId, transcript, language, responses);
       // Logged as MEDICINE_INFO (closest existing intent) — no schema change for AI-answered questions.
       await this.repo.createInteraction({ elderId, transcript, language, intentType: 'MEDICINE_INFO' });
@@ -50,14 +50,14 @@ export class VoiceService {
 
   /** Never throws: an unavailable AI becomes a friendly message, never an internal error. */
   private async askAgenticAi(
-    ai: Pick<AiOrchestratorClient, 'askMedicineQuestion'>,
+    ai: Pick<AiOrchestratorClient, 'askGeneralQuestion'>,
     elderId: string,
     transcript: string,
     language: string,
     responses: ReturnType<typeof getResponses>,
   ): Promise<Omit<VoiceProcessResult, 'language'>> {
     try {
-      const answer = await ai.askMedicineQuestion(elderId, transcript, language);
+      const answer = await ai.askGeneralQuestion(elderId, transcript, language);
       if (!answer.response) return { type: 'information', response: responses.medicineLookupUnavailable(), action: null };
       return { type: 'information', response: answer.response, action: null };
     } catch {

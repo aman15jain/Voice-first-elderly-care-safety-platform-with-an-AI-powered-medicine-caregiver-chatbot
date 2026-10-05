@@ -20,6 +20,15 @@ export class FakeAiOrchestratorClient implements AiOrchestratorClient {
     return this.answerToReturn;
   }
 
+  lastGeneralQuery: string | null = null;
+
+  async askGeneralQuestion(elderId: string, query: string, language: string): Promise<AiAnswer> {
+    this.lastElderId = elderId;
+    this.lastGeneralQuery = query;
+    this.lastLanguage = language;
+    return this.answerToReturn;
+  }
+
   async getCaregiverInsight(elderId: string, language: string): Promise<AiAnswer> {
     this.lastElderId = elderId;
     this.lastQuery = null;

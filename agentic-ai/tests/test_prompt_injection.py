@@ -84,3 +84,11 @@ def test_unauthorized_request_never_reaches_a_tool_call() -> None:
 
     assert res.status_code == 401
     assert fake.medicine_context_calls == []
+
+
+def test_general_answer_text_is_extracted_from_content_blocks() -> None:
+    from app.agents.general_question_agent import _message_text
+
+    blocks = [{"type": "text", "text": "Aspirin is a pain reliever.", "extras": {"signature": "x"}}]
+    assert _message_text(blocks) == "Aspirin is a pain reliever."
+    assert _message_text("plain answer") == "plain answer"
