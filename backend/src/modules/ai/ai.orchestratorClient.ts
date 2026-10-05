@@ -40,6 +40,10 @@ export class HttpAiOrchestratorClient implements AiOrchestratorClient {
     return this.respond({ elder_id: elderId, mode: 'medicine_query', query, language });
   }
 
+  askGeneralQuestion(elderId: string, query: string, language: string): Promise<AiAnswer> {
+    return this.respond({ elder_id: elderId, mode: "general_question", query, language });
+  }
+
   getCaregiverInsight(elderId: string, language: string): Promise<AiAnswer> {
     return this.respond({ elder_id: elderId, mode: 'caregiver_insight', language });
   }

@@ -12,4 +12,6 @@ export interface AiAnswer {
 export interface AiOrchestratorClient {
   askMedicineQuestion(elderId: string, query: string, language: string): Promise<AiAnswer>;
   getCaregiverInsight(elderId: string, language: string): Promise<AiAnswer>;
+  /** Live, general-knowledge answer (no personal data). Used by the voice fallback. */
+  askGeneralQuestion(elderId: string, query: string, language: string): Promise<AiAnswer>;
 }

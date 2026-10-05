@@ -44,7 +44,7 @@ describe('matchIntent (Hindi, with English fallback)', () => {
 
 describe('isMedicineKnowledgeQuestion', () => {
   it('recognizes general medicine-information phrasing', () => {
-    for (const q of ['What is metformin used for?', 'side effects of lisinopril', 'Tell me about Glucophage', 'Can metformin cause stomach problems?']) {
+    for (const q of ['What is metformin used for?', 'side effects of lisinopril', 'Tell me about Glucophage', 'Can metformin cause stomach problems?', 'use of aspirin', 'uses of metformin']) {
       expect(isMedicineKnowledgeQuestion(q)).toBe(true);
     }
   });

@@ -4,6 +4,7 @@ from app.agents.orchestrator import Orchestrator
 from app.api.deps import get_medicine_knowledge_retriever, get_node_client, require_internal_api_key
 from app.config import Settings, get_settings
 from app.llm.provider import get_llm_provider
+from app.rag.chain import create_chat_model
 from app.rag.retriever import MedicineKnowledgeRetriever
 from app.schemas.agents import AgentRequest, AgentResponse
 from app.tools.node_client import NodeApiClient
@@ -16,7 +17,7 @@ def get_orchestrator(
     settings: Settings = Depends(get_settings),
     retriever: MedicineKnowledgeRetriever = Depends(get_medicine_knowledge_retriever),
 ) -> Orchestrator:
-    return Orchestrator(node_client, get_llm_provider(settings), retriever)
+    return Orchestrator(node_client, get_llm_provider(settings), retriever, create_chat_model(settings))
 
 
 @router.post("/agents/respond", response_model=AgentResponse)

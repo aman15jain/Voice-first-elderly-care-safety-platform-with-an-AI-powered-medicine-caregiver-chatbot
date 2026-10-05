@@ -9,6 +9,7 @@ import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/loading_view.dart';
 import '../application/medicines_providers.dart';
 import '../data/medicines_repository.dart';
+import 'schedule_time_format.dart';
 import '../domain/medicine_models.dart';
 
 class MedicineDetailsScreen extends ConsumerStatefulWidget {
@@ -117,7 +118,7 @@ class _ScheduleCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(schedule.timesOfDay.join(' • '), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+            Text(schedule.timesOfDay.map(localTimeLabelFromUtc).join(' • '), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Text(days, style: const TextStyle(fontSize: 16)),
             if (!schedule.isActive) const Padding(padding: EdgeInsets.only(top: 4), child: Text('Inactive', style: TextStyle(color: Colors.grey))),

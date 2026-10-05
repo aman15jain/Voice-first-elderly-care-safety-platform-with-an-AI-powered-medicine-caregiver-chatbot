@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 class AgentRequest(BaseModel):
     elder_id: str
-    mode: Literal["medicine_query", "caregiver_insight"]
+    mode: Literal["medicine_query", "caregiver_insight", "general_question"]
     query: str | None = None
     language: str = "en"
 

@@ -113,7 +113,7 @@ describe('GET /api/voice/interactions', () => {
     const res = await request(app).get('/api/voice/interactions').set('Authorization', `Bearer ${elderToken}`);
     expect(res.status).toBe(200);
     expect(res.body.interactions).toHaveLength(2);
-    expect(res.body.interactions.map((i: { intentType: string }) => i.intentType).sort()).toEqual(['EMERGENCY_SOS', 'UNKNOWN']);
+    expect(res.body.interactions.map((i: { intentType: string }) => i.intentType).sort()).toEqual(['EMERGENCY_SOS', 'MEDICINE_INFO']);
   });
 
   it('lets a linked caregiver view an elder\'s voice interactions, but not an unlinked one', async () => {
@@ -159,7 +159,7 @@ describe('POST /api/voice/process — Agentic AI routing for medicine-informatio
   ])('routes "%s" to the Agentic AI and returns its answer as information with no action', async (transcript) => {
     const { res, ai, elderId } = await ask(transcript);
     expect(res.status).toBe(200);
-    expect(ai.lastQuery).toBe(transcript);
+    expect(ai.lastGeneralQuery).toBe(transcript);
     expect(ai.lastElderId).toBe(elderId);
     expect(res.body.type).toBe('information');
     expect(res.body.response).toContain('Metformin helps control blood sugar');
@@ -176,7 +176,7 @@ describe('POST /api/voice/process — Agentic AI routing for medicine-informatio
 
   it('keeps the medicine-status command deterministic (no AI call)', async () => {
     const { res, ai } = await ask('Did I take my medicine today?');
-    expect(ai.lastQuery).toBeNull();
+    expect(ai.lastGeneralQuery).toBeNull();
     expect(res.body.response).toContain("don't have any medicines scheduled");
   });
 
@@ -184,27 +184,28 @@ describe('POST /api/voice/process — Agentic AI routing for medicine-informatio
     'keeps the emergency command "%s" deterministic: TRIGGER_SOS and no AI call',
     async (transcript) => {
       const { res, ai } = await ask(transcript);
-      expect(ai.lastQuery).toBeNull();
+      expect(ai.lastGeneralQuery).toBeNull();
       expect(res.body.action).toEqual({ type: 'TRIGGER_SOS' });
     },
   );
 
   it('keeps "what medicine do I take" and call commands deterministic (no AI call)', async () => {
     const info = await ask('what medicine do I take');
-    expect(info.ai.lastQuery).toBeNull();
+    expect(info.ai.lastGeneralQuery).toBeNull();
     const call = await ask('call my son');
-    expect(call.ai.lastQuery).toBeNull();
+    expect(call.ai.lastGeneralQuery).toBeNull();
   });
 
-  it('does not send non-question utterances to the AI', async () => {
+  it('sends general conversation that no deterministic rule matches to the live AI answer', async () => {
     const { res, ai } = await ask('good morning');
-    expect(ai.lastQuery).toBeNull();
+    expect(ai.lastGeneralQuery).toBe('good morning');
     expect(res.body.type).toBe('information');
+    expect(res.body.action).toBeNull();
   });
 
   it('answers with a safe friendly message when the Agentic AI is unavailable, without leaking details', async () => {
     const { res } = await ask('What is metformin used for?', (ai) => {
-      ai.askMedicineQuestion = async () => {
+      ai.askGeneralQuestion = async () => {
         throw new Error('connect ECONNREFUSED postgresql://user:SECRET@host');
       };
     });
